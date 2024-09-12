@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 
 class Vehicle extends Model
 {
@@ -18,8 +20,8 @@ class Vehicle extends Model
             'fuel',
             'infos',
         ];
-    public function part(): BelongsTo
+    public function part(): HasOne
     {
-        return $this->belongsTo(Part::class);
+        return $this->hasOne(Part::class);
     }
 }

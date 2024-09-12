@@ -48,7 +48,15 @@ class PartResource extends Resource
     {
         return $table
             ->columns([
-                //
+                Tables\Columns\TextColumn::make('title')
+                 ->searchable(),
+                Tables\Columns\TextColumn::make('vehicle.model')
+                 ->searchable(),
+                Tables\Columns\TextColumn::make('vehicle.motor')
+
+
+
+
             ])
             ->filters([
                 //
