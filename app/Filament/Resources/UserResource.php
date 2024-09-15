@@ -52,8 +52,7 @@ class UserResource extends Resource
                     ->label('avatar')
                     ->circular(),
                 Tables\Columns\TextColumn::make('name')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('email')
+                    ->description(fn (User $record): string => $record->email)
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email_verified_at')
                     ->dateTime()
@@ -67,6 +66,8 @@ class UserResource extends Resource
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('department.title')
+                    ->searchable(),
                 Tables\Columns\ToggleColumn::make('is_admin'),
             ]);
         Forms\Components\FileUpload::make('profileImg')

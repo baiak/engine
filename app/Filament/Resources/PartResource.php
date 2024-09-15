@@ -53,10 +53,7 @@ class PartResource extends Resource
                 Tables\Columns\TextColumn::make('vehicle.model')
                  ->searchable(),
                 Tables\Columns\TextColumn::make('vehicle.motor')
-
-
-
-
+                 ->searchable()
             ])
             ->filters([
                 //
