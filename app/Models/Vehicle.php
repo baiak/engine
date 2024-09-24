@@ -31,8 +31,8 @@ class Vehicle extends Model
         return $this->belongsTo(Order::class);
     }
 
-    public function vehicle(): HasOne
+    public function service(): HasOne
     {
-        return $this->hasOne(Vehicle::class);
+        return $this->hasOne(Service::class);
     }
 }

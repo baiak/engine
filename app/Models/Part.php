@@ -25,4 +25,9 @@ class Part extends Model
     {
         return $this->belongsTo(Vehicle::class);
     }
+
+    public function service(): HasOne
+    {
+        return $this->hasOne(Service::class);
+    }
 }

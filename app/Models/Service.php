@@ -36,9 +36,9 @@ class Service extends Model
     {
         return $this->belongsTo(Department::class);
     }
-    public function vehicle(): HasOne
+    public function vehicle(): BelongsTo
     {
-        return $this->hasOne(Vehicle::class);
+        return $this->belongsTo(Vehicle::class);
     }
 
 

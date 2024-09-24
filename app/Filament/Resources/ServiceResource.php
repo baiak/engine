@@ -99,10 +99,9 @@ class ServiceResource extends Resource
                             ->searchable()
                             ->placeholder('Selecione uma peça')
                             ->reactive()
+                            ->hidden(fn(string $operation): bool => $operation === 'edit')
                             ->required(),
-                        /* Forms\Components\TextInput::make('department_id')
-                             ->required()
-                             ->numeric(),*/
+
                         Select::make('department_id')
                             ->label('Departamento')
                             ->options(function (callable $get) {
@@ -116,6 +115,7 @@ class ServiceResource extends Resource
                             ->searchable()
                             ->reactive()
                             ->placeholder('Selecione o departamento')
+                            ->hidden(fn(string $operation): bool => $operation === 'edit')
                             ->required(),
 
                         Forms\Components\DatePicker::make('deadline')
@@ -127,36 +127,30 @@ class ServiceResource extends Resource
                     ]),
                 Forms\Components\Group::make()
                     ->schema([
+                        Forms\Components\Placeholder::make('order_id')
+                            ->label('Número da ordem')
+
+                            ->content(function ($record): string {
+                                return ($record->order->order_number);
+                            }),
+
                         Forms\Components\Placeholder::make('vehicle')
                             ->label('Veículo')
-                            ->content(function (callable $get) {
-                                $orderId = $get('order_id');
-                                if ($orderId) {
-                                    // Obtém o veículo da ordem se a ordem estiver definida
-                                    $vehicleIdFromOrderTable = Order::where('id', $orderId)->value('vehicle_id');
-                                    $vehicle = Vehicle::find($vehicleIdFromOrderTable);
-                                    if ($vehicle) {
-                                        return $vehicle->factory . '/' . $vehicle->model . '/' . $vehicle->motor; // Retorna o modelo do veículo
-                                    }
-                                }
-                                return null; // Retorna nulo se não houver ordem ou veículo
+                            ->content(function ($record): string {
+                                return (
+                                    $record->order->vehicle->factory . '/'
+                                    . $record->order->vehicle->model . '/'
+                                    . $record->order->vehicle->motor
+                                );
                             }),
 
                         Forms\Components\Placeholder::make('order.client_id')
                             ->label('Cliente')
-                            ->content(function (callable $get) {
-                                $orderId = $get('order_id');
-                                if ($orderId) {
-                                    // Obtém o cliente da ordem se a ordem estiver definida
-                                    $clientIdFromOrderTable = Order::where('id', $orderId)->value('client_id');
-                                    $client = Client::find($clientIdFromOrderTable);
-                                    if ($client) {
-                                        return $client->name; // Retorna o modelo do veículo
-                                    }
-                                }
-                                return null; // Retorna nulo se não houver ordem ou veículo
-                            }),
+                            ->content(function ($record): string {
+                                return ($record->order->client->name);
+                           })
                     ]),
+
 
             ]);
     }
