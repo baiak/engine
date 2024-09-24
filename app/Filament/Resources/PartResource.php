@@ -49,11 +49,17 @@ class PartResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('title')
-                 ->searchable(),
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('vehicle.model')
-                 ->searchable(),
+                    ->getStateUsing(fn($record)=>
+                        $record->vehicle->factory.' / '.
+                        $record->vehicle->model.' / '.
+                        $record->vehicle->motor)
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('vehicle.motor')
-                 ->searchable()
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
             ])
             ->filters([
                 //

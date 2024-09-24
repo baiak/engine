@@ -38,12 +38,43 @@ class OrderResource extends Resource
                     ->options(Client::orderBy('name')->pluck('name', 'id'))
                     ->searchable()
                     ->placeholder('Selecione um cliente')
+                    ->relationship('client', 'name')
+                    ->createOptionForm([
+                        Forms\Components\TextInput::make('name')
+                            ->label('Nome')
+                            ->required(),
+                        Forms\Components\TextInput::make('city')
+                            ->label('Cidade')
+                            ->required(),
+                    ])
                     ->required(),
 
                 Select::make('vehicle_id')
                     ->label('Veículo')
-                    ->options(Vehicle::orderBy('model')->pluck('model', 'id'))
-                    ->searchable()
+                    ->options(
+                        //Vehicle::orderBy('model')->pluck('model', 'id')
+                        Vehicle::query()->get()->mapWithKeys(function ($vehicle) {
+                            return [$vehicle->id => $vehicle->factory . '/' . $vehicle->model . '/' . $vehicle->motor];
+                        })->toArray()
+                    )
+                    ->relationship('vehicle', 'model')
+                    ->createOptionForm([
+                        Forms\Components\TextInput::make('factory')
+                            ->label('Fabrica')
+                            ->required(),
+                        Forms\Components\TextInput::make('model')
+                            ->label('Modelo')
+                            ->required(),
+                        Forms\Components\TextInput::make('motor')
+                            ->label('Motor')
+                            ->required(),
+                        Forms\Components\TextInput::make('year')
+                            ->label('Ano'),
+                        Forms\Components\Select::make('fuel')
+                            ->options(['Gasolina'=>'Gasolina', 'Diesel'=>'Diesel', 'Alcool'=>'Alcool', 'Flex'=>'Flex'])
+                            ->label('Combustivel'),
+                    ])
+                    //->searchable()
                     ->placeholder('Selecione um veículo')
                     ->required(),
 
@@ -59,13 +90,13 @@ class OrderResource extends Resource
 
                 Radio::make('status')
                     ->options(TypeOforderStatus::class),
-                   /* ->options([
-                        'aguardando_orcamento_servicos' => 'Aguardando orçamento de serviços',
-                        'aguardando_aprovacao_cliente' => 'Aguardando aprovacao do cliente',
-                        'aprovado' => 'Aprovado',
-                        'em_andamento' => 'Em Andamento',
-                        'finalizado' => 'Finalizado',
-                    ])*/
+                /* ->options([
+                     'aguardando_orcamento_servicos' => 'Aguardando orçamento de serviços',
+                     'aguardando_aprovacao_cliente' => 'Aguardando aprovacao do cliente',
+                     'aprovado' => 'Aprovado',
+                     'em_andamento' => 'Em Andamento',
+                     'finalizado' => 'Finalizado',
+                 ])*/
 
             ]);
     }
@@ -84,12 +115,28 @@ class OrderResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('user.name')
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\TextColumn::make('client.name')
                     ->numeric()
+                    ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('vehicle.factory')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('vehicle.motor')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+
                 Tables\Columns\TextColumn::make('vehicle.model')
+                    ->getStateUsing(fn($record) => $record->vehicle->factory . ' / ' .
+                        $record->vehicle->model . ' / ' .
+                        $record->vehicle->motor)
                     ->numeric()
+                    ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('order_number')
                     ->searchable(),
@@ -103,6 +150,7 @@ class OrderResource extends Resource
                 //
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
@@ -115,7 +163,7 @@ class OrderResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\ServiceRelationManager::class,
         ];
     }
 

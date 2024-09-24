@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class Labor extends Model
@@ -24,6 +25,25 @@ class Labor extends Model
     {
         return $this->hasOneThrough(Vehicle::class, Part::class, 'id', 'id', 'part_id');
 
+    }
+    public function labor():BelongsToMany
+    {
+        return $this->belongsToMany(Labor::class, 'service_labors', 'service_id', 'labor_id')
+            ->withPivot('user_id',
+                'order_id',
+                'service_id',
+                'labor_id',
+                'includedAt',
+                'approvedAt',
+                'startedAt',
+                'finishedAt',
+                'status',
+                'description')
+            ->withTimestamps();
+    }
+    public function services():BelongsToMany
+    {
+        return $this->belongsToMany(Labor::class);
     }
 
 }
