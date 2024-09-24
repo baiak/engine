@@ -12,12 +12,14 @@ use Filament\Forms;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
+use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class OrderResource extends Resource
 {
@@ -48,35 +50,64 @@ class OrderResource extends Resource
                             ->required(),
                     ])
                     ->required(),
+                Forms\Components\Group::make()
+                    /*->schema([
+                        Select::make('vehicle_id')
+                            ->label('Veículo')
+                            ->options(
+                                Vehicle::orderBy('model')->pluck('model', 'id')->toArray()
+                            )
+                            ->relationship('vehicle', 'model')
+                            ->createOptionForm([
+                                Forms\Components\TextInput::make('factory')
+                                    ->label('Fabricante')
+                                    ->required(),
+                                Forms\Components\TextInput::make('model')
+                                    ->label('Modelo')
+                                    ->required(),
+                                Forms\Components\TextInput::make('motor')
+                                    ->label('Motor')
+                                    ->required(),
+                                Forms\Components\TextInput::make('year')
+                                    ->label('Ano'),
+                                Forms\Components\Select::make('fuel')
+                                    ->options(['Gasolina' => 'Gasolina', 'Diesel' => 'Diesel', 'Alcool' => 'Alcool', 'Flex' => 'Flex'])
+                                    ->label('Combustivel'),
+                            ])
+                            //->searchable()
+                            ->placeholder('Selecione um veículo')
+                            ->live()
+                            ->required(),
 
-                Select::make('vehicle_id')
-                    ->label('Veículo')
-                    ->options(
-                        //Vehicle::orderBy('model')->pluck('model', 'id')
-                        Vehicle::query()->get()->mapWithKeys(function ($vehicle) {
-                            return [$vehicle->id => $vehicle->factory . '/' . $vehicle->model . '/' . $vehicle->motor];
-                        })->toArray()
-                    )
-                    ->relationship('vehicle', 'model')
-                    ->createOptionForm([
-                        Forms\Components\TextInput::make('factory')
-                            ->label('Fabrica')
-                            ->required(),
-                        Forms\Components\TextInput::make('model')
-                            ->label('Modelo')
-                            ->required(),
-                        Forms\Components\TextInput::make('motor')
-                            ->label('Motor')
-                            ->required(),
-                        Forms\Components\TextInput::make('year')
-                            ->label('Ano'),
-                        Forms\Components\Select::make('fuel')
-                            ->options(['Gasolina'=>'Gasolina', 'Diesel'=>'Diesel', 'Alcool'=>'Alcool', 'Flex'=>'Flex'])
-                            ->label('Combustivel'),
-                    ])
-                    //->searchable()
-                    ->placeholder('Selecione um veículo')
-                    ->required(),
+                        Forms\Components\Placeholder::make('vehicle_details')
+                            ->label(false)
+                            ->live()
+                            ->content(function (callable $get) {
+                                $vehicle = Vehicle::find($get('vehicle_id'));
+                                return $vehicle
+                                    ? "{$vehicle->factory} / {$vehicle->model} / {$vehicle->motor}"
+                                    : 'Nenhum veículo selecionado';
+                            }),
+                    ]),*/
+                    ->schema([
+                        Forms\Components\Select::make('fabricante')
+                         ->label('Fabricante')
+                            ->live()
+                            ->options([
+                                    array_unique(
+                                        Vehicle::query()
+                                            ->select([DB::raw("CONCAT(factory, '/', model, '/', motor) as vehicle"), 'id',])
+                                            ->pluck('vehicle', 'id')
+                                            ->toArray()
+                                    )
+                                ])
+                            ->relationship('vehicle', 'factory')
+                            ->createOptionForm([
+                                Forms\Components\TextInput::make('factory'),
+                                Forms\Components\TextInput::make('model'),
+                                Forms\Components\TextInput::make('motor'),
+                            ])
+                        ]),
 
                 Forms\Components\TextInput::make('order_number')
                     ->required()
@@ -84,20 +115,8 @@ class OrderResource extends Resource
                 Forms\Components\DateTimePicker::make('deadline')
                     ->required(),
 
-                /*Forms\Components\TextInput::make('status')
-                    ->required()
-                    ->maxLength(255),*/
-
                 Radio::make('status')
                     ->options(TypeOforderStatus::class),
-                /* ->options([
-                     'aguardando_orcamento_servicos' => 'Aguardando orçamento de serviços',
-                     'aguardando_aprovacao_cliente' => 'Aguardando aprovacao do cliente',
-                     'aprovado' => 'Aprovado',
-                     'em_andamento' => 'Em Andamento',
-                     'finalizado' => 'Finalizado',
-                 ])*/
-
             ]);
     }
 
