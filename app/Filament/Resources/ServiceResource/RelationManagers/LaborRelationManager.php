@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ServiceResource\RelationManagers;
 
+use App\Enums\TypeOfLaborStatus;
 use App\Models\ServiceLabor;
 use App\Models\Labor;
 use App\Models\Service;
@@ -28,19 +29,32 @@ class LaborRelationManager extends RelationManager
                         return ($livewire->getOwnerRecord()->id);
                     })
                     ->maxLength(255),
+
                 Forms\Components\Select::make('labor_id')
                     ->required()
                     ->options(function (Get $get) {
                         $partIdFromService = Service::find($get('service_id'));
                         return Labor::all()->where('part_id', $partIdFromService->part_id)->pluck('title', 'id');
                     }),
+
                 Forms\Components\TextInput::make('part_id')
                     ->required()
                     ->default(function (Get $get) {
                         $partIdFromService = Service::find($get('service_id'));
                         return ($partIdFromService->part_id);
-                    })
+                    }),
 
+                Forms\Components\Placeholder::make('status atual')
+                    ->content(function ($record) {
+                        if ($record) {
+                            return $record->status;
+                        }
+                        return ('status nao incluso');
+                    }),
+
+                Forms\Components\Radio::make('status')
+                    ->options(TypeOfLaborStatus::class)
+                    ->required(),
             ]);
     }
 
@@ -52,7 +66,11 @@ class LaborRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('Mao de obra')
                     ->getStateUsing(function (Labor $record): string {
                         return strtoupper($record->title);
-                    })
+                    }),
+                Tables\Columns\TextColumn::make('status')
+                    ->description(function ($record) {
+                        return ('Em:' . $record->updated_at);
+                    }),
             ])
             ->filters([
                 //
@@ -75,7 +93,6 @@ class LaborRelationManager extends RelationManager
                         ]);
                     })
                     ->form([
-
                         Forms\Components\TextInput::make('order_id')
                             ->required()
                             ->default(function (RelationManager $livewire) {
@@ -111,7 +128,6 @@ class LaborRelationManager extends RelationManager
                             ->default(now())
                             ->required(),
 
-
                         Forms\Components\TextInput::make('part_id')
                             ->required()
                             ->default(function (Get $get) {
@@ -119,9 +135,9 @@ class LaborRelationManager extends RelationManager
                                 return ($partIdFromService->part_id);
                             }),
 
-                        Forms\Components\TextInput::make('status')
+                        Forms\Components\Radio::make('status')
+                            ->options(TypeOfLaborStatus::class)
                             ->required(),
-
                         Forms\Components\TextInput::make('description')
                             ->required()
                     ]),
@@ -136,7 +152,7 @@ class LaborRelationManager extends RelationManager
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     // Tables\Actions\DetachBulkAction::make(),
-                    Tables\Actions\DeleteBulkAction::make(),
+                    //Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

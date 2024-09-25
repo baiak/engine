@@ -11,7 +11,13 @@ enum TypeOfServiceStatus: string implements HasLabel
 
     case rejeitado = 'Rejeitado';
     case em_andamento = 'Em Andamento';
+
+    case impedido = 'Impedido';
     case finalizado = 'Finalizado';
+
+    case aguardando_retirada = 'Aguardando retirada';
+
+    case entregue = 'Entregue';
 
     public function getLabel(): string
     {
@@ -21,8 +27,10 @@ enum TypeOfServiceStatus: string implements HasLabel
             self::aprovado => 'Aprovado',
             self::rejeitado => 'Rejeitado',
             self::em_andamento => 'Em Andamento',
+            self::impedido => 'Impedido',
             self::finalizado => 'Finalizado',
-
+            self::aguardando_retirada => 'Aguardando retirada',
+            self::entregue => 'Entregue',
         };
     }
 

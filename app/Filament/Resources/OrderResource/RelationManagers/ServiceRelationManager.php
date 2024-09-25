@@ -30,7 +30,7 @@ class ServiceRelationManager extends RelationManager
                     ->default(function (RelationManager $livewire) {
                         return ($livewire->getOwnerRecord()->id);
                     })
-                    ->disabled()
+                    //->disabled()
                     ->reactive()
                     ->required()
                     ->maxLength(255),
