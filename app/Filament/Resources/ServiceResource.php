@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Enums\TypeOfServiceStatus;
 use App\Filament\Resources\ServiceResource\Pages;
 use App\Filament\Resources\ServiceResource\RelationManagers;
+use App\Livewire\ListLabor;
 use App\Models\Client;
 use App\Models\Department;
 use App\Models\Order;
@@ -21,6 +22,8 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Split;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+use Filament\Infolists\Components\Livewire;
+use Filament\Infolists\Infolist;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -270,6 +273,7 @@ class ServiceResource extends Resource
                 ]),
             ]);
     }
+
 
     public static function getRelations(): array
     {

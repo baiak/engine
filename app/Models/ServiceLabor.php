@@ -4,7 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
 class ServiceLabor extends Pivot
@@ -25,13 +29,17 @@ class ServiceLabor extends Pivot
             'description',
         ];
 
-    public function labor(): BelongsToMany
+
+
+    public function labor():HasOneOrMany
     {
-        return $this->belongsToMany(Labor::class);
+        return $this->hasOne(Labor::class);
     }
 
-    public function service():BelongsToMany
+    public function service():HasOneOrMany
     {
-        return $this->belongsToMany(Service::class);
+        return $this->hasOne(Service::class);
     }
+
+
 }

@@ -42,9 +42,9 @@ class Labor extends Model
                 'description')
             ->withTimestamps();
     }
-    public function services():BelongsToMany
+    public function service():BelongsTo
     {
-        return $this->belongsToMany(Labor::class);
+        return $this->belongsTo(Service::class);
     }
     protected $casts = [
         'status' => TypeOfLaborStatus::class

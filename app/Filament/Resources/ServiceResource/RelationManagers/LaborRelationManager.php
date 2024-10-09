@@ -34,7 +34,9 @@ class LaborRelationManager extends RelationManager
                     ->required()
                     ->options(function (Get $get) {
                         $partIdFromService = Service::find($get('service_id'));
-                        return Labor::all()->where('part_id', $partIdFromService->part_id)->pluck('title', 'id');
+                        return Labor::all()
+                            ->where('part_id', $partIdFromService->part_id)
+                            ->pluck('title', 'id');
                     }),
 
                 Forms\Components\TextInput::make('part_id')
@@ -78,16 +80,18 @@ class LaborRelationManager extends RelationManager
             ->headerActions([
                 Tables\Actions\Action::make('Adicionar Mão de obra')
                     ->model(ServiceLabor::class)
-                    ->action(function (ServiceLabor $records, array $data): void {
+                    ->action(function (array $data): void {
+                        // Criando um novo registro na tabela 'ServiceLabor'
                         ServiceLabor::create([
                             'user_id' => auth()->id(),
                             'order_id' => $data['order_id'],
                             'service_id' => $data['service_id'],
-                            'labor_id' => $data['labor_id'],
+                            'labor_id' => $data['laborModal_id'],
                             'includedAt' => $data['includedAt'],
-                            /*'approvedAt' => $data['approvedAt'],
-                            'startedAt' => $data['startedAt'],
-                            'finishedAt' => $data['finishedAt'],*/
+                            // Caso queira adicionar mais campos, descomente abaixo:
+                            // 'approvedAt' => $data['approvedAt'],
+                            // 'startedAt' => $data['startedAt'],
+                            // 'finishedAt' => $data['finishedAt'],
                             'status' => $data['status'],
                             'description' => $data['description'],
                         ]);
@@ -96,34 +100,37 @@ class LaborRelationManager extends RelationManager
                         Forms\Components\TextInput::make('order_id')
                             ->required()
                             ->default(function (RelationManager $livewire) {
-                                return ($livewire->getOwnerRecord()->order->id);
+                                return $livewire->getOwnerRecord()->order->id;
                             }),
 
                         Forms\Components\TextInput::make('service_id')
                             ->required()
                             ->default(function (RelationManager $livewire) {
-                                return ($livewire->getOwnerRecord()->id);
+                                return $livewire->getOwnerRecord()->id;
                             })
                             ->maxLength(255),
 
-                        Forms\Components\Select::make('labor_id')
+                        Forms\Components\Select::make('laborModal_id')
                             ->required()
                             ->relationship('labor', 'title')
                             ->options(function (Get $get) {
-                                $partIdFromService = Service::find($get('service_id'));
-                                return Labor::all()->where('part_id', $partIdFromService->part_id)->pluck('title', 'id');
+                                $service = Service::find($get('service_id'));  // Obtém o serviço pelo ID
+                                if ($service) {
+                                    return Labor::where('part_id', $service->part_id)->pluck('title', 'id');
+                                }
+                                return [];
                             })
                             ->createOptionForm([
                                 Forms\Components\TextInput::make('part_id')
                                     ->readOnly()
                                     ->default(function (RelationManager $livewire) {
-                                        $partIdFromService = Service::find($livewire->getOwnerRecord()->id);
-                                        return ($partIdFromService->part_id);
+                                        return $livewire->getOwnerRecord()->part_id;
                                     }),
                                 Forms\Components\TextInput::make('title')
                                     ->required(),
                                 Forms\Components\TextInput::make('description'),
                             ]),
+
                         Forms\Components\DatePicker::make('includedAt')
                             ->default(now())
                             ->required(),
@@ -131,20 +138,22 @@ class LaborRelationManager extends RelationManager
                         Forms\Components\TextInput::make('part_id')
                             ->required()
                             ->default(function (Get $get) {
-                                $partIdFromService = Service::find($get('service_id'));
-                                return ($partIdFromService->part_id);
+                                $service = Service::find($get('service_id'));
+                                return $service ? $service->part_id : null;
                             }),
 
                         Forms\Components\Radio::make('status')
                             ->options(TypeOfLaborStatus::class)
                             ->required(),
+
                         Forms\Components\TextInput::make('description')
-                            ->required()
+                            ->required(),
                     ]),
 
                 //Tables\Actions\AttachAction::make(),
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 //Tables\Actions\DetachAction::make(),
                 Tables\Actions\DeleteAction::make(),

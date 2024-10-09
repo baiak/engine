@@ -31,92 +31,147 @@ class OrderResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('user_id')
-                    ->required()
-                    ->default(auth()->id()),
+                //Forms\Components\Group::make()
+                /*->schema([
+                    Select::make('vehicle_id')
+                        ->label('Veículo')
+                        ->options(
+                            Vehicle::orderBy('model')->pluck('model', 'id')->toArray()
+                        )
+                        ->relationship('vehicle', 'model')
+                        ->createOptionForm([
+                            Forms\Components\TextInput::make('factory')
+                                ->label('Fabricante')
+                                ->required(),
+                            Forms\Components\TextInput::make('model')
+                                ->label('Modelo')
+                                ->required(),
+                            Forms\Components\TextInput::make('motor')
+                                ->label('Motor')
+                                ->required(),
+                            Forms\Components\TextInput::make('year')
+                                ->label('Ano'),
+                            Forms\Components\Select::make('fuel')
+                                ->options(['Gasolina' => 'Gasolina', 'Diesel' => 'Diesel', 'Alcool' => 'Alcool', 'Flex' => 'Flex'])
+                                ->label('Combustivel'),
+                        ])
+                        //->searchable()
+                        ->placeholder('Selecione um veículo')
+                        ->live()
+                        ->required(),
 
-                Select::make('client_id')
-                    ->label('Cliente')
-                    ->options(Client::orderBy('name')->pluck('name', 'id'))
-                    ->searchable()
-                    ->placeholder('Selecione um cliente')
-                    ->relationship('client', 'name')
-                    ->createOptionForm([
-                        Forms\Components\TextInput::make('name')
-                            ->label('Nome')
-                            ->required(),
-                        Forms\Components\TextInput::make('city')
-                            ->label('Cidade')
-                            ->required(),
-                    ])
-                    ->required(),
-                Forms\Components\Group::make()
-                    /*->schema([
-                        Select::make('vehicle_id')
-                            ->label('Veículo')
-                            ->options(
-                                Vehicle::orderBy('model')->pluck('model', 'id')->toArray()
-                            )
-                            ->relationship('vehicle', 'model')
-                            ->createOptionForm([
-                                Forms\Components\TextInput::make('factory')
-                                    ->label('Fabricante')
-                                    ->required(),
-                                Forms\Components\TextInput::make('model')
-                                    ->label('Modelo')
-                                    ->required(),
-                                Forms\Components\TextInput::make('motor')
-                                    ->label('Motor')
-                                    ->required(),
-                                Forms\Components\TextInput::make('year')
-                                    ->label('Ano'),
-                                Forms\Components\Select::make('fuel')
-                                    ->options(['Gasolina' => 'Gasolina', 'Diesel' => 'Diesel', 'Alcool' => 'Alcool', 'Flex' => 'Flex'])
-                                    ->label('Combustivel'),
-                            ])
-                            //->searchable()
-                            ->placeholder('Selecione um veículo')
-                            ->live()
-                            ->required(),
-
-                        Forms\Components\Placeholder::make('vehicle_details')
-                            ->label(false)
-                            ->live()
-                            ->content(function (callable $get) {
-                                $vehicle = Vehicle::find($get('vehicle_id'));
-                                return $vehicle
-                                    ? "{$vehicle->factory} / {$vehicle->model} / {$vehicle->motor}"
-                                    : 'Nenhum veículo selecionado';
-                            }),
-                    ]),*/
+                    Forms\Components\Placeholder::make('vehicle_details')
+                        ->label(false)
+                        ->live()
+                        ->content(function (callable $get) {
+                            $vehicle = Vehicle::find($get('vehicle_id'));
+                            return $vehicle
+                                ? "{$vehicle->factory} / {$vehicle->model} / {$vehicle->motor}"
+                                : 'Nenhum veículo selecionado';
+                        }),
+                ]),*/
+                Forms\Components\Fieldset::make('Informações da ordem')
+                    ->columnSpan(['sm' => 1])
+                    ->hidden(fn(string $operation): bool => $operation === 'create')
                     ->schema([
-                        Forms\Components\Select::make('fabricante')
-                         ->label('Fabricante')
+                        Forms\Components\Placeholder::make('order_number')
+                            ->label('Número:')
+                            ->content(function ($record) {
+                                return $record->order_number;
+                            }),
+
+                        Forms\Components\Placeholder::make('Cliente:')
+                            ->content(function ($record) {
+                                return $record->client->name;
+                            }),
+
+                        Forms\Components\Placeholder::make('Veículo:')
+                            ->content(function ($record) {
+                                return $record->vehicle->factory . '/' . $record->vehicle->model . '/' . $record->vehicle->motor;
+                            }),
+
+                        Forms\Components\Placeholder::make('Status atual:')
+                            ->content(function ($record) {
+                                return $record->status;
+                            }),
+
+                        Forms\Components\Placeholder::make('Cadastrado por:')
+                            ->content(function ($record) {
+                                return $record->user->name . ' em: ' . $record->created_at->format('d/m/Y');
+                            }),
+
+                        Forms\Components\Placeholder::make('Deadline atual:')
+                            ->content(function ($record) {
+                                return $record->deadline;
+                            })
+                        //->hidden(fn(string $operation): bool => $operation === 'create'),
+                    ]),
+
+                Forms\Components\Fieldset::make('Dados')
+                    ->columnSpan(['sm' => 1])
+                    ->schema([
+                        Forms\Components\Hidden::make('user_id')
+                            ->required()
+                            ->default(auth()->id()),
+                           // ->hidden(fn(string $operation): bool => $operation === 'edit'),
+
+                        Select::make('client_id')
+                            ->columnSpan(['sm'=> 2])
+                            ->label('Cliente')
+                            ->options(Client::orderBy('name')->pluck('name', 'id'))
+                            ->searchable()
+                            ->placeholder('Selecione um cliente')
+                            ->relationship('client', 'name')
+                            ->createOptionForm([
+                                Forms\Components\TextInput::make('name')
+                                    ->label('Nome')
+                                    ->required(),
+                                Forms\Components\TextInput::make('city')
+                                    ->label('Cidade')
+                                    ->required(),
+                            ])
+                            ->required()
+                            ->hidden(fn(string $operation): bool => $operation === 'edit'),
+
+                        Forms\Components\Select::make('vehicle_id')
+                            ->columnSpan(['sm'=> 2])
+
+                            ->label('Veículo')
                             ->live()
                             ->options([
-                                    array_unique(
-                                        Vehicle::query()
-                                            ->select([DB::raw("CONCAT(factory, '/', model, '/', motor) as vehicle"), 'id',])
-                                            ->pluck('vehicle', 'id')
-                                            ->toArray()
-                                    )
-                                ])
-                            ->relationship('vehicle', 'factory')
+                                array_unique(
+                                    Vehicle::query()
+                                        ->select([DB::raw("CONCAT(factory, '/', model, '/', motor) as vehicle"), 'id',])
+                                        ->pluck('vehicle', 'id')
+                                        ->toArray()
+                                )
+                            ])
+                            //->relationship('vehicle', 'factory')
                             ->createOptionForm([
                                 Forms\Components\TextInput::make('factory'),
                                 Forms\Components\TextInput::make('model'),
                                 Forms\Components\TextInput::make('motor'),
                             ])
-                        ]),
+                            ->hidden(fn(string $operation): bool => $operation === 'edit'),
 
-                Forms\Components\TextInput::make('order_number')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\DateTimePicker::make('deadline')
-                    ->required(),
+                        Forms\Components\TextInput::make('order_number')
+                            ->columnSpan(['sm'=> 1])
+                            ->label('Número da ordem')
+                            ->required()
+                            ->maxLength(255),
+                            //->hidden(fn(string $operation): bool => $operation === 'edit'),
 
-                Radio::make('status')
-                    ->options(TypeOforderStatus::class),
+
+                        Forms\Components\DateTimePicker::make('deadline')
+                            ->seconds(false)
+
+                            ->columnSpan(['sm' => 1])
+                            ->required(),
+
+                        Radio::make('status')
+                            ->columnSpan(['sm' => 2])
+                            ->options(TypeOforderStatus::class),
+                    ]),
             ]);
     }
 
@@ -128,10 +183,12 @@ class OrderResource extends Resource
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\TextColumn::make('user.name')
                     ->numeric()
                     ->sortable()
@@ -141,6 +198,7 @@ class OrderResource extends Resource
                     ->numeric()
                     ->searchable()
                     ->sortable(),
+
                 Tables\Columns\TextColumn::make('vehicle.factory')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -149,7 +207,6 @@ class OrderResource extends Resource
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-
                 Tables\Columns\TextColumn::make('vehicle.model')
                     ->getStateUsing(fn($record) => $record->vehicle->factory . ' / ' .
                         $record->vehicle->model . ' / ' .
@@ -157,12 +214,15 @@ class OrderResource extends Resource
                     ->numeric()
                     ->searchable()
                     ->sortable(),
+
                 Tables\Columns\TextColumn::make('order_number')
                     ->searchable(),
+
                 Tables\Columns\TextColumn::make('deadline')
                     ->since()
                     ->dateTime()
                     ->sortable(),
+
                 Tables\Columns\TextColumn::make('status'),
             ])
             ->filters([
