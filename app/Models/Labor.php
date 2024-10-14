@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class Labor extends Model
@@ -46,6 +47,13 @@ class Labor extends Model
     {
         return $this->belongsTo(Service::class);
     }
+    public function order(): HasOneOrMany
+    {
+        return $this->hasOne(Order::class);
+
+
+    }
+
     protected $casts = [
         'status' => TypeOfLaborStatus::class
     ];

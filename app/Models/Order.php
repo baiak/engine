@@ -39,7 +39,7 @@ class Order extends Model
     {
         return $this->hasMany(Service::class);
     }
-    public function labor_service():BelongsToMany
+    public function labor():BelongsToMany
     {
         return $this->belongsToMany(Labor::class, 'service_labors', 'labor_id', 'service_id')
             ->withPivot('user_id',

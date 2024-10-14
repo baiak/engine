@@ -15,34 +15,92 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Mews\Purifier\Facades\Purify;
 
 class PartResource extends Resource
 {
     protected static ?string $model = Part::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-
+    public static function getCleanOptionString(Model $model): string
+    {
+        return (
+        view('Components.select-user-result')
+            ->with('name', $model?->name)
+            ->with('email', $model?->email)
+            ->with('image', $model?->profileImg)
+            ->render()
+        );
+    }
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
+               /* Select::make('user')
+                    ->label('Selecione um corno')
+                    ->searchable()
+                    ->allowHtml()
+                    ->getSearchResultsUsing(function (string $search) {
+                        $users = User::where('name', 'like', "%{$search}%")->limit(50)->get();
+
+                        return $users->mapWithKeys(function ($user) {
+                            return [$user->getKey() => static::getCleanOptionString($user)];
+                        })->toArray();
+                    })
+                    ->getOptionLabelUsing(function ($value): string {
+                        $user = User::find($value);
+
+                        return static::getCleanOptionString($user);
+                    }),*/
                 Select::make('department_id')
                     ->label('Departamento responsável')
                     ->options(Department::orderBy('title')->pluck('title', 'id'))
                     ->searchable()
                     ->placeholder('Selecione um departamento'),
+
                 Select::make('vehicle_id')
                     ->label('Veículo')
-                    ->options(Vehicle::orderBy('model')->pluck('model', 'id'))
                     ->searchable()
-                    ->placeholder('Selecione um veículo'),
+                    ->preload()
+                    ->placeholder('Selecione um veículo')
+                    ->options(Vehicle::all()->pluck('title', 'id'))
+                    ->createOptionForm([
+                        Forms\Components\TextInput::make('factory')
+                            ->label('Fabricante')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('model')
+                            ->label('Modelo')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('year')
+                            ->label('Ano')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('motor')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('fuel')
+                            ->label('Combustível')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('infos')
+                            ->label('Informações adicionais (opcional)')
+                            ->maxLength(255),
+                    ])
+                    ->createOptionUsing(function ($data): void {
+                        Vehicle::create($data);
+                    }),
+
                 Forms\Components\TextInput::make('title')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('parameters')
             ]);
     }
+
 
     public static function table(Table $table): Table
     {
@@ -51,9 +109,8 @@ class PartResource extends Resource
                 Tables\Columns\TextColumn::make('title')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('vehicle.model')
-                    ->getStateUsing(fn($record)=>
-                        $record->vehicle->factory.' / '.
-                        $record->vehicle->model.' / '.
+                    ->getStateUsing(fn($record) => $record->vehicle->factory . ' / ' .
+                        $record->vehicle->model . ' / ' .
                         $record->vehicle->motor)
                     ->searchable(),
                 Tables\Columns\TextColumn::make('vehicle.motor')

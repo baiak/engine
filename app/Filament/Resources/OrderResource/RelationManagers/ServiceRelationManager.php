@@ -17,6 +17,7 @@ use Carbon\Carbon;
 use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Components\Actions\Action;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -34,29 +35,40 @@ use Filament\Support\View\Components\Modal;
 use Filament\Tables;
 use Filament\Tables\Actions\CreateAction;
 use Filament\Tables\Columns\Column;
+use Filament\Tables\Columns\Layout\View;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Log;
 use Filament\Pages\Actions;
+use Illuminate\Validation\Rules\Enum;
 
 class ServiceRelationManager extends RelationManager
 {
     protected static string $relationship = 'service';
+    public static function getCleanOptionString(Model $model): string
+    {
+        return (
+            view('Components.select-user-result')
+                ->with('name', $model?->name)
+                ->with('email', $model?->email)
+                ->with('image', $model?->profileImg)
+                ->render()
+        );
+    }
 
     public function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('order_id')
+                Forms\Components\Hidden::make('order_id')
                     ->default(function (RelationManager $livewire) {
                         return ($livewire->getOwnerRecord()->id);
                     })
                     //->disabled()
                     ->reactive()
-                    ->required()
-                    ->maxLength(255),
+                    ->required(),
 
                 Select::make('part_id')
                     ->label('Peça')
@@ -84,8 +96,51 @@ class ServiceRelationManager extends RelationManager
                         // Caso contrário, retorna todas as peças ordenadas por título
                         return Part::orderBy('title')->pluck('title', 'id');
                     })
+                    ->createOptionForm([
+                        Forms\Components\TextInput::make('vehicle.model')
+                            ->label('Veículo')
+                            ->readOnly()
+                            ->default(function(RelationManager $livewire){
+                                return(
+                                    $livewire->getOwnerRecord()->vehicle->factory.'/'.
+                                    $livewire->getOwnerRecord()->vehicle->model.'/'.
+                                    $livewire->getOwnerRecord()->vehicle->motor.'/'
+                                );
+                            }),
+
+                        Select::make('department_id')
+                            ->label('Departamento responsável')
+                            ->options(Department::orderBy('title')->pluck('title', 'id'))
+                            ->searchable()
+                            ->placeholder('Selecione um departamento'),
+
+                        Forms\Components\Hidden::make('vehicle_id')
+                            ->label('Veículo')
+                            ->default(function(RelationManager $livewire){return($livewire->getOwnerRecord()->vehicle->id);}),
+
+                        Forms\Components\TextInput::make('title')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('parameters')
+
+                    ])
+                    ->createOptionUsing(function($data):void{Part::create($data);})
                     ->searchable()
+                    ->hidden(fn(string $operation): bool => $operation === 'edit')
                     ->required(),
+
+                //placeholders exibidos apenas no modal de edição
+                Section::make('Dados do serviço')
+                     ->visible(fn ($record) => $record !== null)
+                     ->schema([
+                 Placeholder::make('Peça')
+                    ->content(fn ($record) => $record ?  $record->part->title : null)
+                    ->visible(fn ($record) => $record !== null),
+
+                Placeholder::make('Responsável  / Departamento')
+                    ->content(fn ($record) => $record ?  $record->department->user->name.' / '.$record->department->title : null)
+                    ->visible(fn ($record) => $record !== null),
+                     ]),
 
                 Select::make('department_id')
                     ->label('Departamento')
@@ -98,15 +153,19 @@ class ServiceRelationManager extends RelationManager
                         return Department::orderBy('title')->pluck('title', 'id');
                     })
                     ->searchable()
-                    ->placeholder('Selecione um departamento'),
+                    ->required()
+                    ->placeholder('Selecione um departamento')
+                    ->hidden(fn(string $operation): bool => $operation === 'edit'),
 
                 Radio::make('status')
+                    ->required()
                     ->options(TypeOfServiceStatus::class),
 
                 Forms\Components\DatePicker::make('deadline')
                     ->required(),
 
-                Forms\Components\TextInput::make('description')
+                Forms\Components\RichEditor::make('description')
+                    ->required()
                     ->maxLength(255),
             ]);
     }
@@ -117,12 +176,14 @@ class ServiceRelationManager extends RelationManager
             ->recordTitleAttribute('part_id')
             ->columns([
                 Tables\Columns\Layout\Stack::make([
+
                     Tables\Columns\TextColumn::make('part_id')
                         ->weight('bold')
                         ->size('lg')
                         ->getStateUsing(function ($record) {
                             return Part::where('id', $record->part_id)->first()->title;
                         }),
+
                     Tables\Columns\TextColumn::make('status')
                         ->label('Status'),
 
@@ -135,75 +196,52 @@ class ServiceRelationManager extends RelationManager
                         }),
 
                     Tables\Columns\TextColumn::make('deadline')
-                        ->formatStateUsing(fn(string $state) => 'Prazo: ' . Carbon::parse($state)->format('d/m/y')),
+                        ->formatStateUsing(fn(string $state) => 'Prazo: '.Carbon::parse($state)->format('d/m/y')),
 
+                ]),//stack1
+                /*View::make('service.labor.list-labor-in-service')
+                    ->components([
+                        Tables\Columns\TextColumn::make('labor.title')
+                            ->listWithLineBreaks()
+                            ->bulleted()
+                            ->description('labor.status'),
+                    ])
+                    ->collapsible(),*/
+
+               Tables\Columns\Layout\Stack::make([
                     Tables\Columns\TextColumn::make('labor.title')
-                        ->label('Listagem de mao de obra')
-                        ->formatStateUsing(function ($record) {
-                            $labor = $record->labor->pluck('title')->toArray();
+                        ->listWithLineBreaks()
+                        ->bulleted()
+                        /*->description(function($record){
+                            return($record->status);
+                        })
+                        /*->formatStateUsing(function ($record) {
+                            $labor = $record->labor;
+                           // dump($labor);
                             $html = '<ul>';
                             foreach ($labor as $item) {
-                                $html .= "<li>{$item}</li>";
+                                $html .= "<li>- {$item->title} - {$item->pivot->status}</li>";
                             }
                             $html .= '</ul>';
 
                             return $html;
-                            }
-                        )->html(),
-                    /*Tables\Columns\ViewColumn::make('labor')
-                        ->view('livewire.list-labor'),*/
-                ]),
-            ])
-            /*->columns([
-                Tables\Columns\Layout\Stack::make([
-                    Tables\Columns\TextColumn::make('part_id')
-                        ->weight('bold')
-                        ->getStateUsing(function ($record) {
-                            return Part::where('id', $record->part_id)->first()->title;
-                        }),
-                    Tables\Columns\TextColumn::make('status')
-                        ->label('Status'),
+                        }
+                        )->html(),*/
+                ])->collapsible()
 
-                    Tables\Columns\TextColumn::make('Responsável: ')
-                        ->formatStateUsing(fn(Column $column, $state): string => $column->getLabel() . ': ' . $state)
-                        ->weight('bold')
-                        ->label('Responsável')
-                        ->getStateUsing(function ($record) {
-                            return ($record->department->user->name);
-                        }),
-
-                    Tables\Columns\TextColumn::make('deadline')
-                        ->formatStateUsing(fn (string $state) => 'Prazo: '.Carbon::parse($state)->format('d/m/y')),
-                        //->formatStateUsing(fn(Column $column, $state): string => $column->getLabel() . ': ' . $state)
-
-                    Tables\Columns\TextColumn::make('Mao de obra')
-
-                        ->getStateUsing(
-                            function ($record) {
-
-                                return (ServiceLabor::select('labor_id')
-                                    ->where('service_id', $record->service_id)
-                                    ->pluck('id')
-
-                                );
-                            }),
-
-                ]),
-
-            ])*/
-            //->contentGrid(['sm' => 1, 'md' => 2, 'lg' => 3])
-
+            ])//columns
+            ->contentGrid(['sm' => 2])
             ->filters([
                 //
             ])
             ->headerActions([
                 Tables\Actions\CreateAction::make()
-                    ->label('Adicionar serviço'),
+                    ->label('Adicionar peça/serviço'),
             ])
             ->actions([
-
                 Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->label('Modificar status'),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
@@ -232,14 +270,13 @@ class ServiceRelationManager extends RelationManager
                             })
 
                     ])->columns(3),
-                Fieldset::make('Dados do serviço')
-                  ->schema([
-                      TextEntry::make('part.title')
-                          ->label('Peça:')
-                          ->columnSpan(1),
-                      Livewire::make(ListLabor::class)
-                          ->columnSpan(4),
-                      ])->columns(5),
-            ])->columns(2);
+                Fieldset::make('Dados do serviço  /  Mão de obra')
+                    ->schema([
+                        TextEntry::make('part.title')
+                            ->label('Peça:'),
+                        Livewire::make(ListLabor::class)
+                            ->columnSpan(3),
+                    ])->columns(4)
+            ]);
     }
 }

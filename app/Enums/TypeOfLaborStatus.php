@@ -7,7 +7,7 @@ use Filament\Support\Contracts\HasLabel;
 enum TypeOfLaborStatus: string implements HasLabel
 {
 
-    case aguardando_aprovacao_cliente = 'Aguardando aprovacao do cliente';
+    case aguardando_aprovacao = 'Aguardando aprovacao';
     case aprovado = 'Aprovado';
     case em_andamento = 'Em Andamento';
     case impedido = 'Impedido';
@@ -16,7 +16,7 @@ enum TypeOfLaborStatus: string implements HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::aguardando_aprovacao_cliente=>'Aguardando aprovacao do cliente',
+            self::aguardando_aprovacao=>'Aguardando aprovacao',
             self::aprovado => 'Aprovado',
             self::em_andamento => 'Em Andamento',
             self::impedido => 'Impedido',

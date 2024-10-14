@@ -40,6 +40,7 @@ class ServiceResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+
     public static function form(Form $form): Form
     {
         return $form
@@ -85,6 +86,7 @@ class ServiceResource extends Resource
                                     }
                                 })
                                 ->hidden(fn(string $operation): bool => $operation === 'edit')
+                                //este campo nao pode ser editado, pois a ordem, serviço, peças e mao de obra estao diretamente e indiretamente relacionados
                                 ->required(),
 
                             Select::make('part_id')
@@ -117,6 +119,9 @@ class ServiceResource extends Resource
                                 ->placeholder('Selecione uma peça')
                                 ->reactive()
                                 ->hidden(fn(string $operation): bool => $operation === 'edit')
+                                //este campo nao pode ser editado, pois possui relacionamento com outros itens,
+                                // se precisar alterar, é preciso deletar o serviço, para que o departamento responsavel seja notificado novamente
+
                                 ->required(),
 
                             Select::make('department_id')
@@ -133,6 +138,9 @@ class ServiceResource extends Resource
                                 ->reactive()
                                 ->placeholder('Selecione o departamento')
                                 ->hidden(fn(string $operation): bool => $operation === 'edit')
+                                //este campo nao pode ser editado, pois no momento do cadastro, o departamento foi notificado
+                                //se for preciso alterar, é necessário deletar o serviço, para que o outro departamento seja notificado
+                                //e o serviço nao fique órfao pendente no dashboard do departamento escolhido anteriormente
                                 ->required(),
 
                             Forms\Components\DatePicker::make('deadline')
@@ -238,6 +246,7 @@ class ServiceResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('order.order_number')
                     //->tooltip(fn($record)=> )
+                    ->searchable()
                     ->tooltip(function ($record) {
                         return ('Cliente:' . $record->order->client->name .
                             '  -  Veículo:' . $record->order->vehicle->factory . '/' .

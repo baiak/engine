@@ -21,7 +21,8 @@ class Vehicle extends Model
             'fuel',
             'infos',
         ];
-    public function part(): HasOne
+    public function part(): HasOneOrMany
+
     {
         return $this->hasOne(Part::class);
     }
@@ -34,5 +35,9 @@ class Vehicle extends Model
     public function service(): HasOne
     {
         return $this->hasOne(Service::class);
+    }
+    public function getTitleAttribute(): string
+    {
+        return "{$this->factory}/{$this->model}/{$this->motor}";
     }
 }

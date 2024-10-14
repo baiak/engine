@@ -3,11 +3,13 @@
 namespace App\Livewire;
 
 use App\Enums\TypeOfLaborStatus;
+use App\Enums\TypeOfServiceStatus;
 use App\Models\Labor;
 use App\Models\Part;
 use App\Models\Service;
 use App\Models\ServiceLabor;
 use Filament\Forms\Components\Actions\Action;
+use Filament\Forms\Components\Radio;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Get;
@@ -85,13 +87,14 @@ class ListLabor extends Component implements HasForms, HasTable
     public function table(Table $table): Table
     {
         return $table
-            //->query(ServiceLabor::query()->where('service_id', $this->ServiceLabor->id))
+            //->query(ServiceLabor::query()->where('service_id', $this->ServiceLabor->id)->orderByDesc( 'created_at' ))
             ->relationship(fn(): BelongsToMany => $this->ServiceLabor->labor())
             ->inverseRelationship('Service')
             ->columns([
                 Split::make([
                     Stack::make([
-                        TextColumn::make('title'),
+                        TextColumn::make('title')
+
                     ]),
                     Stack::make([
                         //->description(function(Model $record){return($record->description);}),
@@ -99,12 +102,14 @@ class ListLabor extends Component implements HasForms, HasTable
                     ])->alignment(Alignment::End)
                 ]),
                 Panel::make([
-                    Stack::make([
-                        TextColumn::make('created_at')
-                          ->formatStateUsing(function(Model $record){
-                              return('Criado em: <b>'.$record->pivot->created_at.'</b><br />Descrição da mao de obra: <b>'.$record->pivot->description.'</b>');
-                          })->html()
-                    ])
+                        Stack::make([
+                            TextColumn::make('created_at')
+                                ->formatStateUsing(function(Model $record) {
+                                    return '<small>Adicionado em: ' . $record->pivot->created_at . '</small>';
+                                })->html(),
+                            TextColumn::make('description')
+                                ->formatStateUsing(fn (Model $record) =>$record->pivot->description)->html(),
+                        ]),
                 ])->collapsed(true)
             ])->contentGrid([
                 'sm' => 1,
@@ -113,20 +118,18 @@ class ListLabor extends Component implements HasForms, HasTable
             ])
             ->filters([
                 // ...
-            ])
+            ])->paginated(false)
             ->headerActions([
                 Tables\Actions\CreateAction::make()
                     ->label('Adicionar mão de obra')
                     ->model(ServiceLabor::class)
                     ->form([
-                        Forms\Components\TextInput::make('user_id')
+                        Forms\Components\Hidden::make('user_id')
                             ->default(auth()->id()),
-                        Forms\Components\TextInput::make('order_id')
+                        Forms\Components\Hidden::make('order_id')
                             ->default($this->ServiceLabor->order->id),
-                        Forms\Components\TextInput::make('service_id')
-                            ->default($this->ServiceLabor->id)
-                            ->required()
-                            ->maxLength(255),
+                        Forms\Components\Hidden::make('service_id')
+                            ->default($this->ServiceLabor->id),
                         Forms\Components\Select::make('labor_id')
                             ->required()
                             ->relationship('labor', 'title')
@@ -138,30 +141,29 @@ class ListLabor extends Component implements HasForms, HasTable
                                 return [];
                             })
                             ->createOptionForm([
-                                Forms\Components\TextInput::make('part_id')
-                                    ->readOnly()
+                                Forms\Components\Hidden::make('part_id')
                                     ->default($this->ServiceLabor->part_id),
                                 Forms\Components\TextInput::make('title')
+                                    ->label('Titulo da mão de obra')
                                     ->required(),
-                                Forms\Components\TextInput::make('description'),
+                                Forms\Components\RichEditor::make('description')
+                                    ->label('Descrições/Parametros e/ou observaçoes diversas')
+                                    ->required(),
                             ]),
-
                         Forms\Components\DatePicker::make('includedAt')
                             ->default(now())
                             ->required(),
-
-                        Forms\Components\TextInput::make('part_id')
+                        Forms\Components\Hidden::make('part_id')
                             ->required()
                             ->default(function () {
                                 $service = Service::find($this->ServiceLabor->id);
                                 return $service ? $service->part_id : null;
                             }),
-
+                        Forms\Components\RichEditor::make('description')
+                            ->required()
+                            ->label('Descrição/observaçoes diversas sobre o serviço'),
                         Forms\Components\Radio::make('status')
                             ->options(TypeOfLaborStatus::class)
-                            ->required(),
-
-                        Forms\Components\TextInput::make('description')
                             ->required(),
                     ])
                     ->action(function ($data) {
@@ -169,12 +171,20 @@ class ListLabor extends Component implements HasForms, HasTable
                     })
             ])
             ->actions([
-                Tables\Actions\ViewAction::make()
-                    ->label('Visualizar')
+                Tables\Actions\EditAction::make()
+                    ->label('Modificar')
                     ->record($this->ServiceLabor)
+                    ->model(ServiceLabor::class)
                     ->form([
                         Forms\Components\TextInput::make('title')
+                            ->readOnly(),
+                        Forms\Components\RichEditor::make('description')
+                             ->formatStateUsing(fn(Model $record)=>$record->pivot->description)
+                             ->required(),
+                        Radio::make('status')
+                            ->options(TypeOfLaborStatus::class),
                     ]),
+
                 Tables\Actions\DetachAction::make()
                     ->label('Remover')
                     ->model(ServiceLabor::class)
