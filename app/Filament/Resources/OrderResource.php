@@ -97,10 +97,10 @@ class OrderResource extends Resource
 
                         Forms\Components\Placeholder::make('Cadastrado por:')
                             ->content(function ($record) {
-                                return $record->user->name . ' em: ' . $record->created_at->format('d/m/Y');
+                                return $record->user->name . ' em: ' . $record->created_at->format('d/m/Y - H:i');
                             }),
 
-                        Forms\Components\Placeholder::make('Deadline atual:')
+                        Forms\Components\Placeholder::make('deadline')
                             ->content(function ($record) {
                                 return $record->deadline;
                             })
@@ -164,7 +164,6 @@ class OrderResource extends Resource
 
                         Forms\Components\DateTimePicker::make('deadline')
                             ->seconds(false)
-
                             ->columnSpan(['sm' => 1])
                             ->required(),
 

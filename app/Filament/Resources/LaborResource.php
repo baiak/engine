@@ -18,6 +18,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\DB;
 
 class LaborResource extends Resource
 {
@@ -29,10 +30,10 @@ class LaborResource extends Resource
     {
         return $form
             ->schema([
+                //section com placeholders exibidos apenas no modal de edição
                 section::make('Dados da peça e do veículo')
                     ->visible(fn($record) => $record !== null)
                     ->schema([
-                        //placeholders exibidos apenas no modal de edição
                         Placeholder::make('Peça')
                             ->content(fn($record) => $record ? $record->part->title : null)
                             ->visible(fn($record) => $record !== null),
@@ -46,15 +47,38 @@ class LaborResource extends Resource
                 Select::make('vehicle_id')
                     ->label('Veículo')
                     ->options(Vehicle::orderBy('model')->pluck('model', 'id'))
+                        ->options([
+                        array_unique(
+                            Vehicle::query()
+                                ->select([DB::raw("CONCAT(factory, '/', model, '/', motor) as vehicle"), 'id',])
+                                ->pluck('vehicle', 'id')
+                                ->toArray()
+                        )
+                    ])
+                    ->createOptionForm([
+                        Forms\Components\TextInput::make('factory')
+                         ->label('Fabricante')
+                         ->required(),
+                        Forms\Components\TextInput::make('model')
+                        ->label('Modelo')
+                        ->required(),
+                        Forms\Components\TextInput::make('motor')
+                        ->label('Motor')
+                        ->required(),
+                        Forms\Components\TextInput::make('year')
+                        ->label('Ano'),
+                        Forms\Components\TextInput::make('fuel')
+                        ->label('Combustível'),
+
+
+                    ])
+                    ->createOptionUsing(function(array $data){ return(Vehicle::create($data));})
                     ->searchable()
-                    ->reactive()
                     ->live()
                     ->placeholder('Selecione um veículo')
                     ->hidden(fn(string $operation): bool => $operation === 'edit'),
 
-                /*Forms\Components\TextInput::make('part_id')
-                    ->required()
-                    ->numeric(),*/
+
                 Select::make('part_id')
                     ->options(function (callable $get) {
                         $vehicle_id = $get('vehicle_id');
@@ -85,17 +109,17 @@ class LaborResource extends Resource
 
                 Tables\Columns\TextColumn::make('part.title')
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->searchable(),
 
                 Tables\Columns\TextColumn::make('vehicle.model')
                    ->formatStateUsing(fn(Model $record)=>
-                   $record->vehicle->factory.'/'.$record->vehicle->model.'/'.$record->vehicle->motor),
+                   $record->vehicle->factory.'/'.$record->vehicle->model.'/'.$record->vehicle->motor)
+                    ->searchable(),
 
                 Tables\Columns\TextColumn::make('title')
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('description')
-                    ->searchable(),
             ])
             ->filters([
                 //

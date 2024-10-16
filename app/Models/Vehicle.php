@@ -31,6 +31,10 @@ class Vehicle extends Model
     {
         return $this->belongsTo(Order::class);
     }
+    public function labor(): HasOne
+    {
+        return $this->hasOne(Labor::class);
+    }
 
     public function service(): HasOne
     {

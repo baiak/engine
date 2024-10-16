@@ -9,6 +9,7 @@ use App\Models\Part;
 use App\Models\Service;
 use App\Models\ServiceLabor;
 use Filament\Forms\Components\Actions\Action;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -104,11 +105,16 @@ class ListLabor extends Component implements HasForms, HasTable
                 Panel::make([
                         Stack::make([
                             TextColumn::make('created_at')
-                                ->formatStateUsing(function(Model $record) {
-                                    return '<small>Adicionado em: ' . $record->pivot->created_at . '</small>';
+                                ->formatStateUsing(function($record) {
+                                    return '<small>Adicionado em: ' . $record->pivot->created_at->format('d/m/Y - H:i') . '</small>';
                                 })->html(),
                             TextColumn::make('description')
-                                ->formatStateUsing(fn (Model $record) =>$record->pivot->description)->html(),
+                                ->default(
+                                    //fn ($record) => $record->pivot->description
+                                    function($record){
+                                        return($record->pivot->description);
+                                    }
+                                )->html(),
                         ]),
                 ])->collapsed(true)
             ])->contentGrid([
@@ -146,9 +152,9 @@ class ListLabor extends Component implements HasForms, HasTable
                                 Forms\Components\TextInput::make('title')
                                     ->label('Titulo da mão de obra')
                                     ->required(),
-                                Forms\Components\RichEditor::make('description')
+                                /*Forms\Components\RichEditor::make('description')
                                     ->label('Descrições/Parametros e/ou observaçoes diversas')
-                                    ->required(),
+                                    ->required(),*/
                             ]),
                         Forms\Components\DatePicker::make('includedAt')
                             ->default(now())

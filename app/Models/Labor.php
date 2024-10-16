@@ -28,6 +28,10 @@ class Labor extends Model
         return $this->hasOneThrough(Vehicle::class, Part::class, 'id', 'id', 'part_id');
 
     }
+    public function vehicleBosta(): BelongsTo
+    {
+        return $this->belongsTo(Vehicle::class);
+    }
     public function labor():BelongsToMany
     {
         return $this->belongsToMany(Labor::class, 'service_labors', 'service_id', 'labor_id')
