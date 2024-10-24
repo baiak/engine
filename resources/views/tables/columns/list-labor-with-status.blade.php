@@ -29,9 +29,7 @@
                             </span>
 
                         <!-- Botão Editar -->
-                        <button class="btn btn-primary" wire:click="$emit(openEditModal({{ $item['id']}})">
-                            Editar Status
-                        </button>
+                        <button wire:click="openModal({{ $item['id'] }})">Editar Status</button>
 
                     </div>
                 </td>
@@ -41,11 +39,10 @@
     </table>
 
     <script>
-        function openEditModal(id) {
-
-            window.alert('bosta');
-        }
+        Livewire.on('openModal', function(recordId) {
+            // Lógica para abrir o modal com os dados específicos
+            alert('Abrindo modal para o registro: ' + recordId);
+        });
     </script>
 @endif
-
-
+@livewireScripts

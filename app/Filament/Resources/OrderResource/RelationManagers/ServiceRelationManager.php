@@ -13,6 +13,7 @@ use App\Models\Service;
 use App\Models\ServiceLabor;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Tables\Columns\listLaborWithStatus;
 use Carbon\Carbon;
 use Filament\Facades\Filament;
 use Filament\Forms;
@@ -36,6 +37,7 @@ use Filament\Tables;
 use Filament\Tables\Actions\CreateAction;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Columns\Layout\View;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -43,18 +45,48 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Log;
 use Filament\Pages\Actions;
 use Illuminate\Validation\Rules\Enum;
+use Illuminate\Database\Eloquent\Collection;
+
 
 class ServiceRelationManager extends RelationManager
 {
+
+
     protected static string $relationship = 'service';
+
+    protected function getTableColumns(): array
+    {
+        return [
+            TextColumn::make('id')->label('ID'),
+            TextColumn::make('title')->label('Título'),
+            TextColumn::make('description')->label('Descrição'),
+        ];
+    }
+
+    protected function getTableActions(): array
+    {
+        return [
+            Action::make('edit')
+                ->label('Editar Status')
+                ->action(function ($record) {
+                    $this->notify(
+                        'success',
+                        "Abrindo modal para o registro: {$record->id}"
+                    );
+                    // Aqui você pode abrir o modal via JS ou outro método
+                })
+        ];
+    }
+
+
     public static function getCleanOptionString(Model $model): string
     {
         return (
-            view('Components.select-user-result')
-                ->with('name', $model?->name)
-                ->with('email', $model?->email)
-                ->with('image', $model?->profileImg)
-                ->render()
+        view('Components.select-user-result')
+            ->with('name', $model?->name)
+            ->with('email', $model?->email)
+            ->with('image', $model?->profileImg)
+            ->render()
         );
     }
 
@@ -100,11 +132,11 @@ class ServiceRelationManager extends RelationManager
                         Forms\Components\TextInput::make('vehicle.model')
                             ->label('Veículo')
                             ->readOnly()
-                            ->default(function(RelationManager $livewire){
-                                return(
-                                    $livewire->getOwnerRecord()->vehicle->factory.'/'.
-                                    $livewire->getOwnerRecord()->vehicle->model.'/'.
-                                    $livewire->getOwnerRecord()->vehicle->motor.'/'
+                            ->default(function (RelationManager $livewire) {
+                                return (
+                                    $livewire->getOwnerRecord()->vehicle->factory . '/' .
+                                    $livewire->getOwnerRecord()->vehicle->model . '/' .
+                                    $livewire->getOwnerRecord()->vehicle->motor . '/'
                                 );
                             }),
 
@@ -116,7 +148,9 @@ class ServiceRelationManager extends RelationManager
 
                         Forms\Components\Hidden::make('vehicle_id')
                             ->label('Veículo')
-                            ->default(function(RelationManager $livewire){return($livewire->getOwnerRecord()->vehicle->id);}),
+                            ->default(function (RelationManager $livewire) {
+                                return ($livewire->getOwnerRecord()->vehicle->id);
+                            }),
 
                         Forms\Components\TextInput::make('title')
                             ->required()
@@ -124,23 +158,25 @@ class ServiceRelationManager extends RelationManager
                         Forms\Components\TextInput::make('parameters')
 
                     ])
-                    ->createOptionUsing(function($data):void{Part::create($data);})
+                    ->createOptionUsing(function ($data): void {
+                        Part::create($data);
+                    })
                     ->searchable()
                     ->hidden(fn(string $operation): bool => $operation === 'edit')
                     ->required(),
 
                 //placeholders exibidos apenas no modal de edição
                 Section::make('Dados do serviço')
-                     ->visible(fn ($record) => $record !== null)
-                     ->schema([
-                 Placeholder::make('Peça')
-                    ->content(fn ($record) => $record ?  $record->part->title : null)
-                    ->visible(fn ($record) => $record !== null),
+                    ->visible(fn($record) => $record !== null)
+                    ->schema([
+                        Placeholder::make('Peça')
+                            ->content(fn($record) => $record ? $record->part->title : null)
+                            ->visible(fn($record) => $record !== null),
 
-                Placeholder::make('Responsável  / Departamento')
-                    ->content(fn ($record) => $record ?  $record->department->user->name.' / '.$record->department->title : null)
-                    ->visible(fn ($record) => $record !== null),
-                     ]),
+                        Placeholder::make('Responsável  / Departamento')
+                            ->content(fn($record) => $record ? $record->department->user->name . ' / ' . $record->department->title : null)
+                            ->visible(fn($record) => $record !== null),
+                    ]),
 
                 Select::make('department_id')
                     ->label('Departamento')
@@ -170,6 +206,7 @@ class ServiceRelationManager extends RelationManager
             ]);
     }
 
+
     public function table(Table $table): Table
     {
         return $table
@@ -196,40 +233,44 @@ class ServiceRelationManager extends RelationManager
                         }),
 
                     Tables\Columns\TextColumn::make('deadline')
-                        ->formatStateUsing(fn(string $state) => 'Prazo: '.Carbon::parse($state)->format('d/m/y')),
+                        ->formatStateUsing(fn(string $state) => 'Prazo: ' . Carbon::parse($state)->format('d/m/y')),
 
                 ]),//stack1
                 /*View::make('service.labor.list-labor-in-service')
                     ->components([
                         Tables\Columns\TextColumn::make('labor.title')
                             ->listWithLineBreaks()
-                            ->bulleted()
-                            ->description('labor.status'),
+                            ->bulleted(),
                     ])
                     ->collapsible(),*/
 
-               Tables\Columns\Layout\Stack::make([
-                    Tables\Columns\TextColumn::make('labor.title')
-                        ->listWithLineBreaks()
-                        ->bulleted()
-                        /*->description(function($record){
-                            return($record->status);
-                        })
-                        /*->formatStateUsing(function ($record) {
-                            $labor = $record->labor;
-                           // dump($labor);
-                            $html = '<ul>';
-                            foreach ($labor as $item) {
-                                $html .= "<li>- {$item->title} - {$item->pivot->status}</li>";
-                            }
-                            $html .= '</ul>';
 
-                            return $html;
-                        }
-                        )->html(),*/
+                /*Tables\Columns\Layout\Stack::make([
+                      listLaborWithStatus::make('labor')
+                     /*Tables\Columns\TextColumn::make('labor.title')
+                         ->listWithLineBreaks()
+                         ->bulleted()
+                         /*->description(function($record){
+                             return($record->status);
+                         })
+                         /*->formatStateUsing(function ($record) {
+                             $labor = $record->labor;
+                            // dump($labor);
+                             $html = '<ul>';
+                             foreach ($labor as $item) {
+                                 $html .= "<li>- {$item->title} - {$item->pivot->status}</li>";
+                             }
+                             $html .= '</ul>';
+
+                             return $html;
+                         }
+                         )->html(),
+                 ])->collapsible()*/
+                Tables\Columns\Layout\Stack::make([
+                        Tables\Columns\ViewColumn::make('labor')
+                            ->view('livewire.labor-list-on-service-relation-manager')
                 ])->collapsible()
-
-            ])//columns
+            ])
             ->contentGrid(['sm' => 2])
             ->filters([
                 //
@@ -239,9 +280,10 @@ class ServiceRelationManager extends RelationManager
                     ->label('Adicionar peça/serviço'),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                Tables\Actions\ViewAction::make()
+                    ->label('Mão de obras'),
                 Tables\Actions\EditAction::make()
-                    ->label('Modificar status'),
+                    ->label('Status do serviço'),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
@@ -249,6 +291,7 @@ class ServiceRelationManager extends RelationManager
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
+
     }
 
     public function infolist(Infolist $infolist): Infolist
@@ -279,4 +322,6 @@ class ServiceRelationManager extends RelationManager
                     ])->columns(4)
             ]);
     }
+
+
 }

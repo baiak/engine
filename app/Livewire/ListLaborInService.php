@@ -30,48 +30,8 @@ use Filament\Tables;
 use Filament\Forms;
 use Livewire\Livewire;
 
-/*class ListLabor extends Component implements HasForms, HasTable
-{
-    public $service;
-    public $record;
 
-    use InteractsWithForms;
-    use InteractsWithTable;
-    public function mount($record)
-    {
-        $this->service = $record;
-    }
-    public function table(Table $table): Table
-    {
-        return $table
-            ->searchable(false)
-            ->paginated(false)
-            ->query(Service::query())
-            ->columns([
-                Tables\Columns\TextColumn::make('id')
-                    ->label('false')
-            ])
-            ->filters([
-                //
-            ])
-            ->actions([
-                //
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    //
-                ]),
-            ]);
-    }
-
-
-    public function render()
-    {
-        return view('livewire.list-labor');
-    }
-}*/
-
-class ListLabor extends Component implements HasForms, HasTable
+class ListLaborInService extends Component implements HasForms, HasTable
 {
     use InteractsWithTable;
     use InteractsWithForms;
@@ -104,19 +64,19 @@ class ListLabor extends Component implements HasForms, HasTable
                     ])->alignment(Alignment::End)
                 ]),
                 Panel::make([
-                        Stack::make([
-                            TextColumn::make('created_at')
-                                ->formatStateUsing(function($record) {
-                                    return '<small>Adicionado em: ' . $record->pivot->created_at->format('d/m/Y - H:i') . '</small>';
-                                })->html(),
-                            TextColumn::make('description')
-                                ->default(
-                                    //fn ($record) => $record->pivot->description
-                                    function($record){
-                                        return($record->pivot->description);
-                                    }
-                                )->html(),
-                        ]),
+                    Stack::make([
+                        TextColumn::make('created_at')
+                            ->formatStateUsing(function($record) {
+                                return '<small>Adicionado em: ' . $record->pivot->created_at->format('d/m/Y - H:i') . '</small>';
+                            })->html(),
+                        TextColumn::make('description')
+                            ->default(
+                            //fn ($record) => $record->pivot->description
+                                function($record){
+                                    return($record->pivot->description);
+                                }
+                            )->html(),
+                    ]),
                 ])->collapsed(true)
             ])->contentGrid([
                 'sm' => 1,
@@ -213,8 +173,8 @@ class ListLabor extends Component implements HasForms, HasTable
                         Forms\Components\TextInput::make('title')
                             ->readOnly(),
                         Forms\Components\RichEditor::make('description')
-                             ->formatStateUsing(fn(Model $record)=>$record->pivot->description)
-                             ->required(),
+                            ->formatStateUsing(fn(Model $record)=>$record->pivot->description)
+                            ->required(),
                         Radio::make('status')
                             ->options(TypeOfLaborStatus::class),
                     ]),
@@ -230,7 +190,7 @@ class ListLabor extends Component implements HasForms, HasTable
 
     public function render()
     {
-        return view('livewire.list-labor');
+        return view('livewire.list-labor-in-service');
     }
     public function callAction($action, $id)
     {
