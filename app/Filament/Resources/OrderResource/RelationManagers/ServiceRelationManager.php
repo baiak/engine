@@ -57,19 +57,19 @@ class ServiceRelationManager extends RelationManager
     protected $listeners = ['toggle-modal'];
     public function __construct()
     {
-        Log::info("ServiceRelationManager carregado."); // Log para confirmar carregamento
+        //Log::info("ServiceRelationManager carregado."); // Log para confirmar carregamento
     }
 
     public function setRecordId($id)
     {
         $this->recordId = $id;
-        Log::info("setRecordId chamado com ID: " . $id); // Verificar se `setRecordId` é acionado
+       // Log::info("setRecordId chamado com ID: " . $id); // Verificar se `setRecordId` é acionado
         $this->loadData();
     }
 
     public function loadData()
     {
-        Log::info("loadData iniciado."); // Log no início do método
+       // Log::info("loadData iniciado."); // Log no início do método
 
         if ($this->recordId) {
             $labor = Labor::find($this->recordId);
@@ -78,15 +78,14 @@ class ServiceRelationManager extends RelationManager
                 $this->data = [
                     'id' => $labor->id,
                     'title' => $labor->title,
-                    'status' => 'depois eu vejo',
                 ];
-                Log::info("loadData carregado com dados: ", $this->data); // Confirmar dados carregados
+             //   Log::info("loadData carregado com dados: ", $this->data); // Confirmar dados carregados
                 $this->dispatch('toggle-modal', $this->data); // Emite o evento
             } else {
-                Log::warning("Labor não encontrado com ID: " . $this->recordId); // Log caso o ID não seja encontrado
+               // Log::warning("Labor não encontrado com ID: " . $this->recordId); // Log caso o ID não seja encontrado
             }
         } else {
-            Log::warning("loadData chamado sem um recordId válido.");
+          //  Log::warning("loadData chamado sem um recordId válido.");
         }
     }
 
