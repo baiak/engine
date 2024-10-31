@@ -1,18 +1,19 @@
 <?php
-namespace App\Http\Livewire;
+namespace App\Livewire;
 
+use App\Models\ServiceLabor;
+use App\Models\User;
 use Livewire\Component;
+
 
 class EditLaborStatusModal extends Component
 {
-    public $recordId;
+    protected $listeners = ['EditLaborStatusModal' => 'loadData'];
 
-    protected $listeners = ['openModal'];
-
-    public function openModal($recordId)
+    public function loadData($id)
     {
-        $this->recordId = $recordId;
-        $this->dispatchBrowserEvent('open-modal');
+        $this->labor = ServiceLabor::find($id); // Carrega os dados
+        $this->dispatchBrowserEvent('toggle-modal'); // Dispara um evento JavaScript
     }
 
     public function render()

@@ -50,9 +50,47 @@ use Illuminate\Database\Eloquent\Collection;
 
 class ServiceRelationManager extends RelationManager
 {
-
-
     protected static string $relationship = 'service';
+    public $recordId;
+    public $data = [];
+
+    protected $listeners = ['toggle-modal'];
+    public function __construct()
+    {
+        Log::info("ServiceRelationManager carregado."); // Log para confirmar carregamento
+    }
+
+    public function setRecordId($id)
+    {
+        $this->recordId = $id;
+        Log::info("setRecordId chamado com ID: " . $id); // Verificar se `setRecordId` é acionado
+        $this->loadData();
+    }
+
+    public function loadData()
+    {
+        Log::info("loadData iniciado."); // Log no início do método
+
+        if ($this->recordId) {
+            $labor = Labor::find($this->recordId);
+
+            if ($labor) {
+                $this->data = [
+                    'id' => $labor->id,
+                    'title' => $labor->title,
+                    'status' => 'depois eu vejo',
+                ];
+                Log::info("loadData carregado com dados: ", $this->data); // Confirmar dados carregados
+                $this->dispatch('toggle-modal', $this->data); // Emite o evento
+            } else {
+                Log::warning("Labor não encontrado com ID: " . $this->recordId); // Log caso o ID não seja encontrado
+            }
+        } else {
+            Log::warning("loadData chamado sem um recordId válido.");
+        }
+    }
+
+
 
     protected function getTableColumns(): array
     {
@@ -62,22 +100,6 @@ class ServiceRelationManager extends RelationManager
             TextColumn::make('description')->label('Descrição'),
         ];
     }
-
-    protected function getTableActions(): array
-    {
-        return [
-            Action::make('edit')
-                ->label('Editar Status')
-                ->action(function ($record) {
-                    $this->notify(
-                        'success',
-                        "Abrindo modal para o registro: {$record->id}"
-                    );
-                    // Aqui você pode abrir o modal via JS ou outro método
-                })
-        ];
-    }
-
 
     public static function getCleanOptionString(Model $model): string
     {
@@ -206,7 +228,6 @@ class ServiceRelationManager extends RelationManager
             ]);
     }
 
-
     public function table(Table $table): Table
     {
         return $table
@@ -267,8 +288,8 @@ class ServiceRelationManager extends RelationManager
                          )->html(),
                  ])->collapsible()*/
                 Tables\Columns\Layout\Stack::make([
-                        Tables\Columns\ViewColumn::make('labor')
-                            ->view('livewire.labor-list-on-service-relation-manager')
+                    Tables\Columns\ViewColumn::make('labor')
+                        ->view('livewire.labor-list-on-service-relation-manager')
                 ])->collapsible()
             ])
             ->contentGrid(['sm' => 2])

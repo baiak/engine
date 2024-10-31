@@ -238,6 +238,7 @@ class OrderResource extends Resource
             ]);
     }
 
+    public $items;
     public static function getRelations(): array
     {
         return [
