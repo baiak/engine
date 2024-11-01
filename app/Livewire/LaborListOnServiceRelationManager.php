@@ -3,6 +3,7 @@ namespace App\Livewire;
 Livewire('Livewire.Edit-Labor-Status-Modal');
 
 
+use App\Enums\TypeOfLaborStatus;
 use App\Models\Labor;
 use App\Models\ServiceLabor;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -19,6 +20,10 @@ class LaborListOnServiceRelationManager extends Component
     public $title;
     public $status;
     public $teste;
+    public function getStatusOptionsProperty()
+    {
+        return TypeOfLaborStatus::cases();
+    }
 
     protected $listeners = ['openEditModal' => 'loadItem'];
 

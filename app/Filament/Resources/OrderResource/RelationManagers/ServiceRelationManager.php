@@ -50,6 +50,12 @@ use Illuminate\Database\Eloquent\Collection;
 
 class ServiceRelationManager extends RelationManager
 {
+    public function getStatusOptionsProperty()
+    {
+        return TypeOfLaborStatus::cases();
+    }
+
+
     protected static string $relationship = 'service';
     public $recordId;
     public $data = [];
