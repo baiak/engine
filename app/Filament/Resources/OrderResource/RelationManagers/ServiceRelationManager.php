@@ -59,11 +59,20 @@ class ServiceRelationManager extends RelationManager
     protected static string $relationship = 'service';
     public $recordId;
     public $data = [];
+    public $status;
+    public $selectedStatus;
+    public $ServiceLaborId;
 
-    protected $listeners = ['toggle-modal'];
+    protected $listeners = ['statusUpdated'];
     public function __construct()
     {
         //Log::info("ServiceRelationManager carregado."); // Log para confirmar carregamento
+    }
+    public function setServiceLaborId($id)
+    {
+        $this->ServiceLaborId=$id;
+        $this->updateStatus();
+        $this->loadLaborDescription();
     }
 
     public function setRecordId($id)
@@ -93,6 +102,19 @@ class ServiceRelationManager extends RelationManager
         } else {
           //  Log::warning("loadData chamado sem um recordId válido.");
         }
+    }
+    public function updateStatus()
+    {
+        //Log::info('servicelaborid recebe', ['mensagem' => $this->ServiceLaborId]);
+       // Log::info('selected status recebe', ['mensagem' => $this->selectedStatus]);
+        ServiceLabor::where('id', $this->ServiceLaborId)->update(['status' => $this->selectedStatus]);
+
+        // Atualiza o status na interface
+        $this->dispatch('statusUpdated', $this->selectedStatus);
+    }
+    public function loadLaborDescription(){
+        $serviceLabor = ServiceLabor::select('description')->where('id', $this->ServiceLaborId)->first();
+        $this->dispatch('showLaborDescription', $serviceLabor->description);
     }
 
 

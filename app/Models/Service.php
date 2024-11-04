@@ -48,7 +48,7 @@ class Service extends Model
     public function labor():BelongsToMany
     {
         return $this->belongsToMany(Labor::class, 'service_labors', 'service_id', 'labor_id')
-               ->withPivot('user_id',
+               ->withPivot('id','user_id',
                    'order_id',
                    'service_id',
                    'labor_id',
