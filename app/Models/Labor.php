@@ -54,8 +54,10 @@ class Labor extends Model
     public function order(): HasOneOrMany
     {
         return $this->hasOne(Order::class);
+    }
 
-
+    public function history():string{
+        return 'isso é teste';
     }
 
     protected $casts = [

@@ -45,6 +45,4 @@ class ServiceLabor extends Pivot
     {
         return $this->hasOne(Order::class);
     }
-
-
 }

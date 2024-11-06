@@ -4,6 +4,7 @@ namespace App\Models;
 
 
 use App\Enums\TypeOfServiceStatus;
+use App\Livewire\ServiceStatusHistory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -60,6 +61,47 @@ class Service extends Model
                    'description')
             ->withTimestamps();
     }
+    /**
+     * Compara valores antigos e novos para retornar uma lista de mudanças.
+     *
+     * @param string $oldJson JSON com os valores antigos.
+     * @param string $newJson JSON com os valores novos.
+     * @return array Lista de mudanças com o campo, valor antigo e valor novo.
+     */
+    public function getChangesFromJson(string $oldJson, string $newJson): array
+    {
+        // Decodifica os JSONs para arrays associativos
+        $oldValues = json_decode($oldJson, true);
+        $newValues = json_decode($newJson, true);
+
+        $changes = [];
+
+        // Itera sobre os novos valores para encontrar mudanças
+        foreach ($newValues as $key => $newValue) {
+            $oldValue = $oldValues[$key] ?? null;
+
+            // Verifica se houve alteração
+            if ($oldValue !== $newValue) {
+                $changes[] = [
+                    'field' => $key,
+                    'old_value' => $oldValue,
+                    'new_value' => $newValue,
+                ];
+            }
+        }
+
+        return $changes;
+    }
+    public function serviceAuditLog(): HasOne
+    {
+        return $this->hasOne(ServiceAuditLog::class);
+
+    }
+    public function statusHistory()
+    {
+        return $this->hasMany(ServiceAuditLog::class, 'service_id');
+    }
+
 
     protected $casts = [
         'status' => TypeOfServiceStatus::class

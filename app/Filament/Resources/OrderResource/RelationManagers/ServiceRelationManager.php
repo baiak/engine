@@ -64,13 +64,15 @@ class ServiceRelationManager extends RelationManager
     public $ServiceLaborId;
 
     protected $listeners = ['statusUpdated'];
+
     public function __construct()
     {
         //Log::info("ServiceRelationManager carregado."); // Log para confirmar carregamento
     }
+
     public function setServiceLaborId($id)
     {
-        $this->ServiceLaborId=$id;
+        $this->ServiceLaborId = $id;
         $this->updateStatus();
         $this->loadLaborDescription();
     }
@@ -78,13 +80,14 @@ class ServiceRelationManager extends RelationManager
     public function setRecordId($id)
     {
         $this->recordId = $id;
-       // Log::info("setRecordId chamado com ID: " . $id); // Verificar se `setRecordId` é acionado
+        // Log::info("setRecordId chamado com ID: " . $id); // Verificar se `setRecordId` é acionado
         $this->loadData();
     }
 
+
     public function loadData()
     {
-       // Log::info("loadData iniciado."); // Log no início do método
+        // Log::info("loadData iniciado."); // Log no início do método
 
         if ($this->recordId) {
             $labor = Labor::find($this->recordId);
@@ -94,29 +97,31 @@ class ServiceRelationManager extends RelationManager
                     'id' => $labor->id,
                     'title' => $labor->title,
                 ];
-             //   Log::info("loadData carregado com dados: ", $this->data); // Confirmar dados carregados
+                //   Log::info("loadData carregado com dados: ", $this->data); // Confirmar dados carregados
                 $this->dispatch('toggle-modal', $this->data); // Emite o evento
             } else {
-               // Log::warning("Labor não encontrado com ID: " . $this->recordId); // Log caso o ID não seja encontrado
+                // Log::warning("Labor não encontrado com ID: " . $this->recordId); // Log caso o ID não seja encontrado
             }
         } else {
-          //  Log::warning("loadData chamado sem um recordId válido.");
+            //  Log::warning("loadData chamado sem um recordId válido.");
         }
     }
+
     public function updateStatus()
     {
         //Log::info('servicelaborid recebe', ['mensagem' => $this->ServiceLaborId]);
-       // Log::info('selected status recebe', ['mensagem' => $this->selectedStatus]);
+        // Log::info('selected status recebe', ['mensagem' => $this->selectedStatus]);
         ServiceLabor::where('id', $this->ServiceLaborId)->update(['status' => $this->selectedStatus]);
 
         // Atualiza o status na interface
         $this->dispatch('statusUpdated', $this->selectedStatus);
     }
-    public function loadLaborDescription(){
+
+    public function loadLaborDescription()
+    {
         $serviceLabor = ServiceLabor::select('description')->where('id', $this->ServiceLaborId)->first();
         $this->dispatch('showLaborDescription', $serviceLabor->description);
     }
-
 
 
     protected function getTableColumns(): array
@@ -314,31 +319,37 @@ class ServiceRelationManager extends RelationManager
                          }
                          )->html(),
                  ])->collapsible()*/
-                Tables\Columns\Layout\Stack::make([
-                    Tables\Columns\ViewColumn::make('labor')
-                        ->view('livewire.labor-list-on-service-relation-manager')
-                ])->collapsible()
+
+
+                        Tables\Columns\Layout\Stack::make([
+
+                            Tables\Columns\ViewColumn::make('statusHistory')
+                                ->view('livewire.service-status-history'),
+
+                            Tables\Columns\ViewColumn::make('labor')
+                                ->view('livewire.labor-list-on-service-relation-manager')
+                        ])->collapsible()
             ])
             ->contentGrid(['sm' => 2])
-            ->filters([
-                //
-            ])
-            ->headerActions([
-                Tables\Actions\CreateAction::make()
-                    ->label('Adicionar peça/serviço'),
-            ])
-            ->actions([
-                Tables\Actions\ViewAction::make()
-                    ->label('Mão de obras'),
-                Tables\Actions\EditAction::make()
-                    ->label('Status do serviço'),
-                Tables\Actions\DeleteAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
+                            ->filters([
+                                //
+                            ])
+                            ->headerActions([
+                                Tables\Actions\CreateAction::make()
+                                    ->label('Adicionar peça/serviço'),
+                            ])
+                            ->actions([
+                                Tables\Actions\ViewAction::make()
+                                    ->label('Mão de obras'),
+                                Tables\Actions\EditAction::make()
+                                    ->label('Status do serviço'),
+                                Tables\Actions\DeleteAction::make(),
+                            ])
+                            ->bulkActions([
+                                Tables\Actions\BulkActionGroup::make([
+                                    Tables\Actions\DeleteBulkAction::make(),
+                                ]),
+                            ]);
 
     }
 

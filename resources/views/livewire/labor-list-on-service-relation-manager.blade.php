@@ -1,5 +1,6 @@
 <div class="m-y-3">
-    <table class="!w-full !min-w-max !table-auto !text-left !border !border-zinc-700 !rounded-sm p-3  m-3 mb-5">
+    <fieldset class="rounded-xl border border-gray-600 p-3 mt-2">
+        <table class="!w-full !min-w-max !table-auto !text-left !border !border-zinc-700 !rounded-sm p-3  m-3 mb-5">
         <thead>
         <tr>
             <th class="border-b !border-zinc-700 bg-blue-gray-50/50 p-3">
@@ -21,7 +22,6 @@
         @if($getState() != "")
             @foreach ($getState() as $item)
                 <tr style="border-bottom: 1px solid; border-color: #d6d6d6;" wire:key="{{ $item->id }}">
-
                     <td class="p-2">
                         <div class="flex items-left gap-2 flex-col" x-data="{ expanded: false }">
                             <div wire:key="{{ $item->pivot->id }}">
@@ -46,7 +46,8 @@
                                         icon="heroicon-c-chevron-down"
                                         class="h-4 w-4 "
                                         x-show="expanded"
-                                    /><span class="whitespace-nowrap">
+                                    />
+                                    <span class="whitespace-nowrap">
                                      {{($item->title)}}
                                     </span>
                                 </button>
@@ -61,20 +62,22 @@
                                      border-bottom: #1b1e21 1px solid;
                                      background-color:#9ca3af;
                                      display: flex;
+                                     color: #0062cc;
                                      justify-content: space-between;
                                      align-items: center;">
                                     <x-filament::icon
                                         icon="css-info"
                                         class="h-4 w-4 mx-2"
-                                    /><small style="color: #4b5563; font-weight: bold">Informações da mão de obra</small>
-
+                                    />
+                                    <small style="color: #4b5563; font-weight: bold">
+                                        Informações
+                                    </small>
                                     <button @click="expanded = ! expanded" style="color: #9d174d" title="Clique para fechar">
                                         <x-filament::icon
                                             icon="eva-close-square-outline"
                                             class="h-4 w-4 mx-2 text-red"
                                         />
                                     </button>
-
                                 </div>
 
                                 <div class="p-3">
@@ -82,18 +85,13 @@
                                         {!!$item->pivot->description!!}
                                     </small>
                                 </div>
-
                             </div>
                         </div>
                     </td>
-
-
                     <td class="p-2" style="font-size: x-small">
-
                         <div x-data="{ currentStatus: @entangle('status') }"
                              x-init="$wire.on('statusUpdated', newStatus => currentStatus = newStatus">
                         </div>
-
                         <div x-data="{ expanded: false }">
                             <small>
                                 <button @click="expanded = ! expanded"
@@ -119,8 +117,7 @@
                                         @break
                                         @default
                                             style="background-color:#f3f4f6; color: #1f2937; font-size: x-small"
-                                    @endswitch
-                                >
+                                    @endswitch >
                                     <!-- Icones svg!-->
                                     @switch($item->pivot->status)
                                         @case('Aguardando aprovacao')
@@ -188,30 +185,38 @@
                                     />
                                 </button>
                             </small>
-
-
                             <div x-show="expanded" class="p-3 mt-3 " x-collapse>
-
                                 <form wire:submit.prevent="updateStatus"
-                                      style="display: flex; align-items: center; gap: 4px;">
+                                      style="display: flex;
+                                             align-items: center;
+                                             gap: 4px;">
                                     <select wire:model="selectedStatus" class="small-select rounded"
                                             style="color: #18191b; background-color:#d6d6d6;  font-size: x-small">
                                         @foreach (\App\Enums\TypeOfLaborStatus::cases() as $status)
                                             <option value="{{ $status->value }}">{{ $status->getLabel() }}</option>
                                         @endforeach
                                     </select>
-                                    <button type="submit"
+                                    <button type="submit" title="Atualizar status"
                                             x-on:click="$wire.setServiceLaborId({{$item->pivot->id}}), expanded = ! expanded"
                                             style="background-color: #0062cc; margin-top:3px; color: white; "
                                             class="p-1 bg-gray-700 rounded small-button border-gray-600">
-                                            Ok
+
+                                        <x-filament::icon
+                                            icon="elusive-refresh"
+                                            class="h-4 w-4 "
+                                            x-show="expanded"
+                                        />
                                     </button>
 
-                                    <button
+                                    <button title="Cancelar"
                                             @click="expanded = ! expanded"
                                             style="background-color: #ef0543; margin-top:3px; color: white; "
                                             class="p-1 px-1 bg-gray-700 rounded small-button border-gray-600">
-                                        X
+                                        <x-filament::icon
+                                            icon="heroicon-m-x-mark"
+                                            class="h-4 w-4 "
+                                            x-show="expanded"
+                                        />
                                     </button>
                                 </form>
                             </div>
@@ -223,5 +228,6 @@
         @endif
         </tbody>
     </table>
+    </fieldset>
 </div>
 

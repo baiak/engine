@@ -31,6 +31,11 @@ class User extends Authenticatable
         return $this->hasOne(Department::class);
     }
 
+    function serviceAuditLog (): BelongsTo
+    {
+        return $this->belongsTo(ServiceAuditLog::class);
+    }
+
     function order(): HasMany
     {
         return $this->hasMany(Order::class);

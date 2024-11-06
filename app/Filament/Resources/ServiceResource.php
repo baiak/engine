@@ -269,6 +269,8 @@ class ServiceResource extends Resource
                 Tables\Columns\TextColumn::make('description')
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->searchable(),
+
+
             ])
             ->filters([
                 //
