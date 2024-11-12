@@ -100,7 +100,20 @@ class ListLabor extends Component implements HasForms, HasTable
                     ]),
                     Stack::make([
                         //->description(function(Model $record){return($record->description);}),
-                        TextColumn::make('status'),
+                        TextColumn::make('status')
+                           /* ->formatStateUsing(fn ($state) => $state instanceof TypeOfLaborStatus ? $state->getIcon() : TypeOfLaborStatus::tryFrom($state)?->getIcon() ?? 'heroicon-o-question-mark-circle')
+                            ->icon(fn ($state) => $state instanceof TypeOfLaborStatus ? $state->getIcon() : TypeOfLaborStatus::tryFrom($state)?->getIcon() ?? 'heroicon-o-question-mark-circle'),*/
+                           ->formatStateUsing(fn ($state) =>
+                           $state instanceof TypeOfLaborStatus
+                               ? "<span class='inline-flex items-center whitespace-nowrap' {$state->getStyle()}>
+                                 <i class='{$state->getIcon()}' style='font-size: 0.85em;'></i>{$state->getLabel()}</span>"
+                               : (TypeOfLaborStatus::tryFrom($state)?->getLabel() ?? 'Desconhecido')
+                           )
+                            ->html() // Habilita HTML para permitir ícones inline
+                            ->colors([
+                                'success' => TypeOfLaborStatus::aprovado->value,
+                                'danger' => TypeOfLaborStatus::aguardando_aprovacao->value,
+                            ])
                     ])->alignment(Alignment::End)
                 ]),
                 Panel::make([
@@ -179,6 +192,7 @@ class ListLabor extends Component implements HasForms, HasTable
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()
+                    ->label('Visualizar')
                     ->record($this->ServiceLabor)
                     ->form([
                         Forms\Components\TextInput::make('title')
@@ -190,20 +204,7 @@ class ListLabor extends Component implements HasForms, HasTable
                             ->options(TypeOfLaborStatus::class),
 
                     ]),
-                Tables\Actions\Action::make('editStatus')
-                    ->label('Modificar')
-                    ->record($this->ServiceLabor)
-                    ->model(ServiceLabor::class)
-                    ->form([
-                        Forms\Components\TextInput::make('title')
-                            ->readOnly(),
-                        Forms\Components\RichEditor::make('description')
-                            ->formatStateUsing(fn(Model $record)=>$record->pivot->description)
-                            ->required(),
-                        Radio::make('status')
-                            ->options(TypeOfLaborStatus::class),
-                    ])
-                    ->action(function ($data):void {ServiceLabor::update($data);}),
+
 
                 Tables\Actions\EditAction::make()
                     ->label('Modificar')

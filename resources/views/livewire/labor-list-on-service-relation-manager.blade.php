@@ -1,11 +1,12 @@
 <div class="m-y-3">
+    @if($getState() != "")
     <fieldset class="rounded-xl border border-gray-600 p-3 mt-2">
         <table class="!w-full !min-w-max !table-auto !text-left !border !border-zinc-700 !rounded-sm p-3  m-3 mb-5">
         <thead>
         <tr>
             <th class="border-b !border-zinc-700 bg-blue-gray-50/50 p-3">
                 <p class="block antialiased font-sans text-sm text-blue-gray-900 font-small leading-none opacity-70 text-xs font-semibold ">
-                    Mao de obra
+                    Mão de obra
                 </p>
             </th>
             <th class="border-b !border-zinc-700 bg-blue-gray-50/50 p-3">
@@ -14,19 +15,23 @@
                 </p>
             </th>
             <th class="border-b !border-zinc-700 bg-blue-gray-50/50 p-3" colspan="2">
-
             </th>
         </tr>
         </thead>
         <tbody>
-        @if($getState() != "")
             @foreach ($getState() as $item)
                 <tr style="border-bottom: 1px solid; border-color: #d6d6d6;" wire:key="{{ $item->id }}">
                     <td class="p-2">
                         <div class="flex items-left gap-2 flex-col" x-data="{ expanded: false }">
                             <div wire:key="{{ $item->pivot->id }}">
                                 <button
-                                    class="!whitespace-nowrap  !antialiased !font-sans  !text-sm-left !leading-normal !text-blue-gray-900 !font-bold"
+                                    class="!whitespace-nowrap
+                                           !antialiased
+                                           !font-sans
+                                           !text-sm-left
+                                           !leading-normal
+                                           !text-blue-gray-900
+                                           !font-bold"
                                     style="
                                      width: 100%;
                                      display: flex;
@@ -52,8 +57,10 @@
                                     </span>
                                 </button>
                             </div>
-                            <div x-show="expanded" x-collapse.duration.500ms id="description{{$item->pivot->id}}"
-                                 style="background-color: #cccbcb; color: #202020"
+                            <div x-show="expanded"
+                                 x-collapse.duration.500ms
+                                 id="description{{$item->pivot->id}}"
+                                 style="background-color: #cccbcb;color: #202020"
                                  class="pb-3 pl-3 pr-3 m-2 rounded-xl border border-gray-600">
 
                                 <div class="p-1 mb-3 rounded-t-xl"
@@ -221,13 +228,12 @@
                                 </form>
                             </div>
                         </div>
-
                     </td>
                 </tr>
             @endforeach
-        @endif
         </tbody>
     </table>
     </fieldset>
+    @endif
 </div>
 

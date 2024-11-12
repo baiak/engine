@@ -1,3 +1,4 @@
+
 @if ($getRecord()->statusHistory->isNotEmpty())
     <div x-data="{ open: false }">
         <button
@@ -7,12 +8,10 @@
                    font-size:small;
                    text-align: start;
                    font-weight: bold"
-            @click="open = ! open"
-        >
+            @click="open = ! open">
             <x-filament::icon
                 icon="tabler-history"
                 class="h-4 w-4 mr-3"
-
             />
             <span class="ml-2">Histórico</span>
             <!-- Seta apontando para a direita -->
@@ -38,11 +37,9 @@
                          color: #333334;
                          font-size: small
                          ">
-
             @php
                 $firstIteration = true; // Variável de controle para exibir $oldValues apenas uma vez
-                $legendCount = 1;
-            @endphp
+                $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://{$_SERVER['HTTP_HOST']}";            @endphp
 
             @foreach($getRecord()->statusHistory as $item)
                 @php
@@ -51,41 +48,64 @@
                 @endphp
 
                 @if($firstIteration && isset($oldValues))
-                    <fieldset class="m-2 mb-3 p-2 border border-gray-600 rounded-xl"
-                              x-show="open"
-                              x-transition.duration.1000ms
-                              x-transition.scale.origin.top
-                              style="/*background-color:#cccbcb*/;
+                    <fieldset
+                        class="m-2 mb-3 p-2 border border-gray-600 rounded-xl  whitespace-nowrap flex items-center space-x-1"
+                        x-show="open"
+                        x-transition.duration.1000ms
+                        x-transition.scale.origin.top
+                        style="/*background-color:#cccbcb*/;
                                 color: #d6d6d6">
+                        <div class="flex flex-col items-center" style="margin-right: 10px">
+                            <!-- Imagem de perfil redonda -->
+                            <div class="w-16 h-16 rounded-full overflow-hidden border border-gray-600">
+                                <img src="{{ $baseUrl }}/storage/{{ $item->user->profileImg }}"
+                                     alt="Imagem de perfil de {{ $item->user->name }}"
+                                     class="w-full h-full object-cover">
+                            </div>
 
-                            {{ \Carbon\Carbon::parse($oldValues['created_at'])->format('d/m/Y - H:i') }}<br />
+                            <!-- Nome do usuário abaixo da imagem -->
+                            <strong class="text-center text-sm">{{ $item->user->name }}</strong>
+                        </div>
 
-                        Cadastrado por:<strong>{{ $item->user->name }}</strong><br />
-                        <strong>Status:</strong> {{ $oldValues['status'] }}
+
+                        <div>
+                            <strong>Adicionado em:</strong>
+                            {{ \Carbon\Carbon::parse($oldValues['created_at'])->format('d/m/Y - H:i') }}<br/>
+                            <strong>Status:</strong> {{ $oldValues['status'] }}
+                        </div>
+
+
                     </fieldset>
                     @php
                         $firstIteration = false; // Define como false após exibir $oldValues uma vez
-                        $legendCount++;
                     @endphp
                 @endif
 
                 @if(isset($newValues))
-                    <fieldset class="m-2 mt-3 p-2 border border-gray-600 rounded-xl"
+                    <fieldset class="m-2 mt-3 p-2 border border-gray-600 rounded-xl whitespace-nowrap flex items-center space-x-1"
                               style="/*background-color:#454545;*/
                                 color: #d6d6d6"
                               x-show="open"
                               x-transition.scale.origin.top>
+                        <div class="flex flex-col items-center" style="margin-right: 10px">
+                            <!-- Imagem de perfil redonda -->
+                            <div class="w-16 h-16 rounded-full overflow-hidden border border-gray-600">
+                                <img src="{{ $baseUrl }}/storage/{{ $item->user->profileImg }}"
+                                     alt="Imagem de perfil de {{ $item->user->name }}"
 
-
-                            {{ \Carbon\Carbon::parse($newValues['updated_at'])->format('d/m/Y - H:i') }}<br />
-
-                        <strong>Status:</strong> {{ $newValues['status'] }}
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <!-- Nome do usuário abaixo da imagem -->
+                            <strong class="text-center text-sm">{{ $item->user->name }}</strong>
+                        </div>
+                        <div>
+                            {{ \Carbon\Carbon::parse($newValues['updated_at'])->format('d/m/Y - H:i') }}<br/>
+                            <strong>Status:</strong> {{ $newValues['status'] }}
+                        </div>
                     </fieldset>
-                    @php
-                        $legendCount++; // Incrementa o contador após exibir o $newValues
-                    @endphp
                 @endif
             @endforeach
         </fieldset>
+
     </div>
 @endif
