@@ -288,38 +288,7 @@ class ServiceRelationManager extends RelationManager
                     Tables\Columns\TextColumn::make('deadline')
                         ->formatStateUsing(fn(string $state) => 'Prazo: ' . Carbon::parse($state)->format('d/m/y')),
 
-                ]),//stack1
-                /*View::make('service.labor.list-labor-in-service')
-                    ->components([
-                        Tables\Columns\TextColumn::make('labor.title')
-                            ->listWithLineBreaks()
-                            ->bulleted(),
-                    ])
-                    ->collapsible(),*/
-
-
-                /*Tables\Columns\Layout\Stack::make([
-                      listLaborWithStatus::make('labor')
-                     /*Tables\Columns\TextColumn::make('labor.title')
-                         ->listWithLineBreaks()
-                         ->bulleted()
-                         /*->description(function($record){
-                             return($record->status);
-                         })
-                         /*->formatStateUsing(function ($record) {
-                             $labor = $record->labor;
-                            // dump($labor);
-                             $html = '<ul>';
-                             foreach ($labor as $item) {
-                                 $html .= "<li>- {$item->title} - {$item->pivot->status}</li>";
-                             }
-                             $html .= '</ul>';
-
-                             return $html;
-                         }
-                         )->html(),
-                 ])->collapsible()*/
-
+                ]),
 
                         Tables\Columns\Layout\Stack::make([
 
@@ -330,7 +299,7 @@ class ServiceRelationManager extends RelationManager
                                 ->view('livewire.labor-list-on-service-relation-manager')
                         ])->collapsible()
             ])
-            ->contentGrid(['sm' => 2])
+            ->contentGrid(['sm' => 1])
                             ->filters([
                                 //
                             ])

@@ -101,6 +101,7 @@ class ListLabor extends Component implements HasForms, HasTable
                     Stack::make([
                         //->description(function(Model $record){return($record->description);}),
                         TextColumn::make('status')
+
                            /* ->formatStateUsing(fn ($state) => $state instanceof TypeOfLaborStatus ? $state->getIcon() : TypeOfLaborStatus::tryFrom($state)?->getIcon() ?? 'heroicon-o-question-mark-circle')
                             ->icon(fn ($state) => $state instanceof TypeOfLaborStatus ? $state->getIcon() : TypeOfLaborStatus::tryFrom($state)?->getIcon() ?? 'heroicon-o-question-mark-circle'),*/
                            ->formatStateUsing(fn ($state) =>
@@ -110,10 +111,7 @@ class ListLabor extends Component implements HasForms, HasTable
                                : (TypeOfLaborStatus::tryFrom($state)?->getLabel() ?? 'Desconhecido')
                            )
                             ->html() // Habilita HTML para permitir ícones inline
-                            ->colors([
-                                'success' => TypeOfLaborStatus::aprovado->value,
-                                'danger' => TypeOfLaborStatus::aguardando_aprovacao->value,
-                            ])
+
                     ])->alignment(Alignment::End)
                 ]),
                 Panel::make([

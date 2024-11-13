@@ -74,7 +74,6 @@
                             <strong>Status:</strong> {{ $oldValues['status'] }}
                         </div>
 
-
                     </fieldset>
                     @php
                         $firstIteration = false; // Define como false após exibir $oldValues uma vez
@@ -92,7 +91,6 @@
                             <div class="w-16 h-16 rounded-full overflow-hidden border border-gray-600">
                                 <img src="{{ $baseUrl }}/storage/{{ $item->user->profileImg }}"
                                      alt="Imagem de perfil de {{ $item->user->name }}"
-
                                      class="w-full h-full object-cover">
                             </div>
                             <!-- Nome do usuário abaixo da imagem -->

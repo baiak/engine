@@ -21,8 +21,8 @@
         <tbody>
             @foreach ($getState() as $item)
                 <tr style="border-bottom: 1px solid; border-color: #d6d6d6;" wire:key="{{ $item->id }}">
-                    <td class="p-2">
-                        <div class="flex items-left gap-2 flex-col" x-data="{ expanded: false }">
+                    <td class="p-2" x-model="titleLabor" x-data="{ open: false }" >
+                        <div class="flex items-left gap-2 flex-col" x-data="{ expanded: false }" >
                             <div wire:key="{{ $item->pivot->id }}">
                                 <button
                                     class="!whitespace-nowrap
@@ -101,7 +101,7 @@
                         </div>
                         <div x-data="{ expanded: false }">
                             <small>
-                                <button @click="expanded = ! expanded"
+                                <button @click="expanded = ! expanded, titleLabor = !expanded"
                                         class="inline-flex items-center px-1 py-1 pe-3 rounded-full whitespace-nowrap"
                                         @switch($item->pivot->status)
                                             @case('Aguardando aprovacao')
@@ -192,28 +192,22 @@
                                     />
                                 </button>
                             </small>
-                            <div x-show="expanded" class="p-3 mt-3 " x-collapse>
+                            <div x-show="expanded" class="p-3 mt-3" x-collapse x-on:click="laborTitle = 'open =! open'">
                                 <form wire:submit.prevent="updateStatus"
                                       style="display: flex;
                                              align-items: center;
-                                             gap: 4px;">
-                                    <select wire:model="selectedStatus" class="small-select rounded"
-                                            style="color: #18191b; background-color:#d6d6d6;  font-size: x-small">
-                                        @foreach (\App\Enums\TypeOfLaborStatus::cases() as $status)
-                                            <option value="{{ $status->value }}">{{ $status->getLabel() }}</option>
-                                        @endforeach
-                                    </select>
-                                    <button type="submit" title="Atualizar status"
-                                            x-on:click="$wire.setServiceLaborId({{$item->pivot->id}}), expanded = ! expanded"
-                                            style="background-color: #0062cc; margin-top:3px; color: white; "
-                                            class="p-1 bg-gray-700 rounded small-button border-gray-600">
+                                             gap: 4px; font-size: x-small" >
+                                        <x-filament::input.wrapper>
+                                            <x-filament::input.select  style="font-size: x-small" wire:model="selectedStatus" class="small-select p-1" x-on:change="$wire.setServiceLaborId({{$item->pivot->id}}), expanded = ! expanded">
+                                                <option value="" selected>Selecione uma opção</option>
+                                                @foreach (\App\Enums\TypeOfLaborStatus::cases() as $status)
+                                                    <option value="{{ $status->value }}">
+                                                            {{ $status->getLabel() }}
+                                                    </option>
+                                                @endforeach
+                                            </x-filament::input.select>
+                                        </x-filament::input.wrapper>
 
-                                        <x-filament::icon
-                                            icon="elusive-refresh"
-                                            class="h-4 w-4 "
-                                            x-show="expanded"
-                                        />
-                                    </button>
 
                                     <button title="Cancelar"
                                             @click="expanded = ! expanded"
