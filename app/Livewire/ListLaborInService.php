@@ -86,57 +86,6 @@ class ListLaborInService extends Component implements HasForms, HasTable
             ->filters([
                 // ...
             ])->paginated(false)
-            ->headerActions([
-                Tables\Actions\CreateAction::make()
-                    ->label('Adicionar mão de obra')
-                    ->model(ServiceLabor::class)
-                    ->form([
-                        Forms\Components\Hidden::make('user_id')
-                            ->default(auth()->id()),
-                        Forms\Components\Hidden::make('order_id')
-                            ->default($this->ServiceLabor->order->id),
-                        Forms\Components\Hidden::make('service_id')
-                            ->default($this->ServiceLabor->id),
-                        Forms\Components\Select::make('labor_id')
-                            ->required()
-                            ->relationship('labor', 'title')
-                            ->options(function (Get $get) {
-                                $service = Service::find($this->ServiceLabor->id);  // Obtém o serviço pelo ID
-                                if ($service) {
-                                    return Labor::where('part_id', $service->part_id)->pluck('title', 'id');
-                                }
-                                return [];
-                            })
-                            ->createOptionForm([
-                                Forms\Components\Hidden::make('part_id')
-                                    ->default($this->ServiceLabor->part_id),
-                                Forms\Components\TextInput::make('title')
-                                    ->label('Titulo da mão de obra')
-                                    ->required(),
-                                /*Forms\Components\RichEditor::make('description')
-                                    ->label('Descrições/Parametros e/ou observaçoes diversas')
-                                    ->required(),*/
-                            ]),
-                        Forms\Components\DatePicker::make('includedAt')
-                            ->default(now())
-                            ->required(),
-                        Forms\Components\Hidden::make('part_id')
-                            ->required()
-                            ->default(function () {
-                                $service = Service::find($this->ServiceLabor->id);
-                                return $service ? $service->part_id : null;
-                            }),
-                        Forms\Components\RichEditor::make('description')
-                            ->required()
-                            ->label('Descrição/observaçoes diversas sobre o serviço'),
-                        Forms\Components\Radio::make('status')
-                            ->options(TypeOfLaborStatus::class)
-                            ->required(),
-                    ])
-                    ->action(function ($data) {
-                        ServiceLabor::create($data);
-                    })
-            ])
             ->actions([
                 Tables\Actions\ViewAction::make()
                     ->record($this->ServiceLabor)
@@ -150,7 +99,7 @@ class ListLaborInService extends Component implements HasForms, HasTable
                             ->options(TypeOfLaborStatus::class),
 
                     ]),
-                Tables\Actions\Action::make('editStatus')
+                /*Tables\Actions\Action::make('editStatus')
                     ->label('Modificar')
                     ->record($this->ServiceLabor)
                     ->model(ServiceLabor::class)
@@ -163,7 +112,7 @@ class ListLaborInService extends Component implements HasForms, HasTable
                         Radio::make('status')
                             ->options(TypeOfLaborStatus::class),
                     ])
-                    ->action(function ($data):void {ServiceLabor::update($data);}),
+                    ->action(function ($data):void {ServiceLabor::update($data);}),*/
 
                 Tables\Actions\EditAction::make()
                     ->label('Modificar')
@@ -179,7 +128,7 @@ class ListLaborInService extends Component implements HasForms, HasTable
                             ->options(TypeOfLaborStatus::class),
                     ]),
 
-                Tables\Actions\DetachAction::make()
+                Tables\Actions\DeleteAction::make()
                     ->label('Remover')
                     ->model(ServiceLabor::class)
             ])
@@ -192,10 +141,10 @@ class ListLaborInService extends Component implements HasForms, HasTable
     {
         return view('livewire.list-labor-in-service');
     }
-    public function callAction($action, $id)
+    /*public function callAction($action, $id)
     {
         $record = ServiceLabor::findOrFail($id);
         $this->emit('callFilamentAction', $action, $record);
-    }
+    }*/
 
 }

@@ -4,19 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
-use Illuminate\Database\Eloquent\Relations\Pivot;
+use Illuminate\Support\Facades\DB;
 
-class ServiceLabor extends Pivot
+
+class ServiceLabor extends Model
+
 {
     use HasFactory;
     protected $table = 'service_labors';
     protected $fillable =
-        [
+        [   'id',
             'user_id',
             'order_id',
             'service_id',
@@ -31,6 +30,10 @@ class ServiceLabor extends Pivot
 
 
 
+    public function logs(): HasMany
+    {
+        return $this->hasMany(ServiceLaborLog::class, 'service_labor_id');
+    }
     public function labor():HasOneOrMany
     {
         return $this->hasOne(Labor::class);
@@ -45,4 +48,11 @@ class ServiceLabor extends Pivot
     {
         return $this->hasOne(Order::class);
     }
+
+    public function user():HasOneOrMany
+    {
+        return $this->hasOne(User::class);
+    }
+
+
 }

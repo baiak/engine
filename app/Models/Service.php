@@ -46,6 +46,7 @@ class Service extends Model
     {
         return $this->belongsTo(Labor::class);
     }
+
     public function labor():BelongsToMany
     {
         return $this->belongsToMany(Labor::class, 'service_labors', 'service_id', 'labor_id')

@@ -81,7 +81,7 @@
                 @endif
 
                 @if(isset($newValues))
-                    <fieldset class="m-2 mt-3 p-2 border border-gray-600 rounded-xl whitespace-nowrap flex items-center space-x-1"
+                    <fieldset class="m-2 mt-3 p-2 border border-gray-600 rounded-xl flex items-center space-x-1"
                               style="/*background-color:#454545;*/
                                 color: #d6d6d6"
                               x-show="open"

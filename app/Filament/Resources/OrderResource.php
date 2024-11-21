@@ -11,12 +11,14 @@ use App\Models\Vehicle;
 use Filament\Forms;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\ViewField;
 use Filament\Forms\Form;
 use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -31,45 +33,6 @@ class OrderResource extends Resource
     {
         return $form
             ->schema([
-                //Forms\Components\Group::make()
-                /*->schema([
-                    Select::make('vehicle_id')
-                        ->label('Veículo')
-                        ->options(
-                            Vehicle::orderBy('model')->pluck('model', 'id')->toArray()
-                        )
-                        ->relationship('vehicle', 'model')
-                        ->createOptionForm([
-                            Forms\Components\TextInput::make('factory')
-                                ->label('Fabricante')
-                                ->required(),
-                            Forms\Components\TextInput::make('model')
-                                ->label('Modelo')
-                                ->required(),
-                            Forms\Components\TextInput::make('motor')
-                                ->label('Motor')
-                                ->required(),
-                            Forms\Components\TextInput::make('year')
-                                ->label('Ano'),
-                            Forms\Components\Select::make('fuel')
-                                ->options(['Gasolina' => 'Gasolina', 'Diesel' => 'Diesel', 'Alcool' => 'Alcool', 'Flex' => 'Flex'])
-                                ->label('Combustivel'),
-                        ])
-                        //->searchable()
-                        ->placeholder('Selecione um veículo')
-                        ->live()
-                        ->required(),
-
-                    Forms\Components\Placeholder::make('vehicle_details')
-                        ->label(false)
-                        ->live()
-                        ->content(function (callable $get) {
-                            $vehicle = Vehicle::find($get('vehicle_id'));
-                            return $vehicle
-                                ? "{$vehicle->factory} / {$vehicle->model} / {$vehicle->motor}"
-                                : 'Nenhum veículo selecionado';
-                        }),
-                ]),*/
                 Forms\Components\Fieldset::make('Informações da ordem')
                     ->columnSpan(['sm' => 1])
                     ->hidden(fn(string $operation): bool => $operation === 'create')
@@ -87,7 +50,9 @@ class OrderResource extends Resource
 
                         Forms\Components\Placeholder::make('Veículo:')
                             ->content(function ($record) {
-                                return $record->vehicle->factory . '/' . $record->vehicle->model . '/' . $record->vehicle->motor;
+                                return $record->vehicle->factory . '/' .
+                                       $record->vehicle->model . '/' .
+                                       $record->vehicle->motor;
                             }),
 
                         Forms\Components\Placeholder::make('Status atual:')
@@ -114,6 +79,7 @@ class OrderResource extends Resource
                             ->required()
                             ->default(auth()->id()),
                            // ->hidden(fn(string $operation): bool => $operation === 'edit'),
+
 
                         Select::make('client_id')
                             ->columnSpan(['sm'=> 2])
@@ -152,6 +118,10 @@ class OrderResource extends Resource
                                 Forms\Components\TextInput::make('model'),
                                 Forms\Components\TextInput::make('motor'),
                             ])
+                            ->createOptionUsing(function($data):void
+                            {
+                                Vehicle::create($data);
+                            })
                             ->hidden(fn(string $operation): bool => $operation === 'edit'),
 
                         Forms\Components\TextInput::make('order_number')
@@ -171,6 +141,7 @@ class OrderResource extends Resource
                             ->columnSpan(['sm' => 2])
                             ->options(TypeOforderStatus::class),
                     ]),
+
             ]);
     }
 
@@ -194,6 +165,7 @@ class OrderResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('client.name')
+                    ->label("Cliente:")
                     ->numeric()
                     ->searchable()
                     ->sortable(),
@@ -223,6 +195,7 @@ class OrderResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('status'),
+
             ])
             ->filters([
                 //

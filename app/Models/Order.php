@@ -39,6 +39,11 @@ class Order extends Model
     {
         return $this->hasMany(Service::class);
     }
+
+    public function ServiceAuditLogs(): HasMany
+    {
+        return $this->hasMany(ServiceAuditLog::class);
+    }
     public function labor():BelongsToMany
     {
         return $this->belongsToMany(Labor::class, 'service_labors', 'labor_id', 'service_id')

@@ -49,7 +49,7 @@ enum TypeOfLaborStatus: string implements HasLabel, HasIcon, HasColor
             self::condenado => ' style=" color: #1f2937; font-size: small"',
             self::em_andamento => 'style="color: #1e40af; font-size: small"',
             self::impedido => 'style=" color: #991b1b; font-size: small"',
-            self::finalizado => 'style="color: #1f2937;font-size: small"',
+            self::finalizado => 'style="color: #065f46;font-size: small"',
         };
     }
     public function getColor(): string

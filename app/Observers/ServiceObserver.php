@@ -11,6 +11,7 @@ class ServiceObserver
     {
         DB::table('service_audit_logs')->insert([
             'service_id' => $service->id,
+            'order_id' => $service->order_id,
             'action' => 'created',
             'old_values' => null,
             'new_values' => json_encode($service->getAttributes()),
@@ -23,6 +24,7 @@ class ServiceObserver
     {
         DB::table('service_audit_logs')->insert([
             'service_id' => $service->id,
+            'order_id' => $service->order_id,
             'action' => 'updated',
             'old_values' => json_encode($service->getOriginal()),
             'new_values' => json_encode($service->getChanges()),
@@ -35,6 +37,7 @@ class ServiceObserver
     {
         DB::table('service_audit_logs')->insert([
             'service_id' => $service->id,
+            'order_id' => $service->order_id,
             'action' => 'deleted',
             'old_values' => json_encode($service->getAttributes()),
             'new_values' => null,

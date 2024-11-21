@@ -88,10 +88,6 @@ class LaborRelationManager extends RelationManager
                             'service_id' => $data['service_id'],
                             'labor_id' => $data['laborModal_id'],
                             'includedAt' => $data['includedAt'],
-                            // Caso queira adicionar mais campos, descomente abaixo:
-                            // 'approvedAt' => $data['approvedAt'],
-                            // 'startedAt' => $data['startedAt'],
-                            // 'finishedAt' => $data['finishedAt'],
                             'status' => $data['status'],
                             'description' => $data['description'],
                         ]);

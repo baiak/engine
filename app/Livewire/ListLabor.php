@@ -24,6 +24,8 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables;
@@ -101,13 +103,14 @@ class ListLabor extends Component implements HasForms, HasTable
                     Stack::make([
                         //->description(function(Model $record){return($record->description);}),
                         TextColumn::make('status')
+                            ->badge()
 
                            /* ->formatStateUsing(fn ($state) => $state instanceof TypeOfLaborStatus ? $state->getIcon() : TypeOfLaborStatus::tryFrom($state)?->getIcon() ?? 'heroicon-o-question-mark-circle')
                             ->icon(fn ($state) => $state instanceof TypeOfLaborStatus ? $state->getIcon() : TypeOfLaborStatus::tryFrom($state)?->getIcon() ?? 'heroicon-o-question-mark-circle'),*/
                            ->formatStateUsing(fn ($state) =>
                            $state instanceof TypeOfLaborStatus
                                ? "<span class='inline-flex items-center whitespace-nowrap' {$state->getStyle()}>
-                                 <i class='{$state->getIcon()}' style='font-size: 0.85em;'></i>{$state->getLabel()}</span>"
+                                 <i class='{$state->getIcon()}'</i>{$state->getLabel()}</span>"
                                : (TypeOfLaborStatus::tryFrom($state)?->getLabel() ?? 'Desconhecido')
                            )
                             ->html() // Habilita HTML para permitir ícones inline
@@ -140,9 +143,9 @@ class ListLabor extends Component implements HasForms, HasTable
             ->headerActions([
                 Tables\Actions\CreateAction::make()
                     ->label('Adicionar mão de obra')
-                    ->model(ServiceLabor::class)
+                    //->model(ServiceLabor::class)
                     ->form([
-                        Forms\Components\Hidden::make('user_id')
+                        Forms\Components\TextInput::make('user_id')
                             ->default(auth()->id()),
                         Forms\Components\Hidden::make('order_id')
                             ->default($this->ServiceLabor->order->id),
@@ -184,7 +187,7 @@ class ListLabor extends Component implements HasForms, HasTable
                             ->options(TypeOfLaborStatus::class)
                             ->required(),
                     ])
-                    ->action(function ($data) {
+                   ->action(function ($data) {
                         ServiceLabor::create($data);
                     })
             ])
@@ -209,6 +212,8 @@ class ListLabor extends Component implements HasForms, HasTable
                     ->record($this->ServiceLabor)
                     ->model(ServiceLabor::class)
                     ->form([
+                        Forms\Components\TextInput::make('pivot_id')
+                            ->default(fn (Model $record)=>$record->pivot->id),
                         Forms\Components\TextInput::make('title')
                             ->readOnly(),
                         Forms\Components\RichEditor::make('description')
@@ -216,7 +221,19 @@ class ListLabor extends Component implements HasForms, HasTable
                              ->required(),
                         Radio::make('status')
                             ->options(TypeOfLaborStatus::class),
-                    ]),
+                    ])
+                ->after((function ($record) {
+                        // Inserir logs após a edição
+                        DB::table('service_labor_logs')->insert([
+                            'service_labor_id' => $record->pivot->id,
+                            'event' => 'updated',
+                            'old_values' => json_encode($record->getOriginal()), // Valores antigos
+                            'new_values' => json_encode($record->pivot->getChanges()),  // Valores novos
+                            'user_id' => Auth::id(),                              // ID do usuário logado
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }),),
 
                 Tables\Actions\DetachAction::make()
                     ->label('Remover')
@@ -231,10 +248,6 @@ class ListLabor extends Component implements HasForms, HasTable
     {
         return view('livewire.list-labor');
     }
-    public function callAction($action, $id)
-    {
-        $record = ServiceLabor::findOrFail($id);
-        $this->emit('callFilamentAction', $action, $record);
-    }
+
 
 }

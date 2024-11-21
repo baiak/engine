@@ -35,13 +35,13 @@ class LaborListOnServiceRelationManager extends Component
         $this->status = $item->pivot->status;
     }
 
-    public function save()
+    /*public function save()
     {
         $item = Labor::find($this->itemId);
         $item->pivot->update(['status' => $this->status]);
         $this->emit('itemUpdated');
         $this->dispatchBrowserEvent('closeModal');
-    }
+    }*/
     public function render(): \Illuminate\Contracts\View\View|\Illuminate\Contracts\View\Factory|\Illuminate\Foundation\Application
     {
         return view('livewire.labor-list-on-service-relation-manager');

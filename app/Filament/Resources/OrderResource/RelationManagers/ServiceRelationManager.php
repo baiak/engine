@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\OrderResource\RelationManagers;
 
+use AllowDynamicProperties;
 use App\Enums\TypeOfLaborStatus;
 use App\Enums\TypeOfServiceStatus;
 use App\Livewire\ListLabor;
@@ -11,6 +12,7 @@ use App\Models\Order;
 use App\Models\Part;
 use App\Models\Service;
 use App\Models\ServiceLabor;
+use App\Models\ServiceLaborLog;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Tables\Columns\listLaborWithStatus;
@@ -39,16 +41,19 @@ use Filament\Tables\Columns\Column;
 use Filament\Tables\Columns\Layout\View;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Filament\Pages\Actions;
 use Illuminate\Validation\Rules\Enum;
 use Illuminate\Database\Eloquent\Collection;
 
 
-class ServiceRelationManager extends RelationManager
+#[AllowDynamicProperties] class ServiceRelationManager extends RelationManager
 {
     public function getStatusOptionsProperty()
     {
@@ -63,12 +68,47 @@ class ServiceRelationManager extends RelationManager
     public $selectedStatus;
     public $ServiceLaborId;
 
-    protected $listeners = ['statusUpdated'];
+    protected $listeners = ['statusUpdated', 'fetchServiceLaborLogs'];
 
     public function __construct()
     {
         //Log::info("ServiceRelationManager carregado."); // Log para confirmar carregamento
     }
+
+    public function getServiceLaborLogs($serviceLaborId)
+    {
+        return ServiceLaborLog::where('service_labor_id', $serviceLaborId)
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function ($log) {
+                try {
+                    $log->new_values = $log->new_values ? json_decode($log->new_values, true) : null;
+                    $log->old_values = $log->old_values ? json_decode($log->old_values, true) : null;
+
+                    if (is_array($log->new_values)) {
+                        $updatedValues = $log->new_values;
+
+                        foreach ($updatedValues as $key => $value) {
+                            if (in_array($key, ['created_at', 'updated_at', 'deleted_at'])) {
+                                if (is_string($value) && strtotime($value)) {
+                                    $updatedValues[$key] = Carbon::parse($value)->format('d/m/Y H:i:s');
+                                } else {
+                                    Log::warning("Invalid date format for key {$key}: {$value}");
+                                }
+                            }
+                        }
+
+                        $log->new_values = $updatedValues;
+                    }
+                } catch (\Exception $e) {
+                    Log::error("Error processing log: {$e->getMessage()}");
+                }
+
+                return $log;
+            });
+    }
+
+
 
     public function setServiceLaborId($id)
     {
@@ -76,6 +116,8 @@ class ServiceRelationManager extends RelationManager
         $this->updateStatus();
         $this->loadLaborDescription();
     }
+
+
 
     public function setRecordId($id)
     {
@@ -107,21 +149,58 @@ class ServiceRelationManager extends RelationManager
         }
     }
 
-    public function updateStatus()
+    /*public function updateStatus()
     {
-        //Log::info('servicelaborid recebe', ['mensagem' => $this->ServiceLaborId]);
-        // Log::info('selected status recebe', ['mensagem' => $this->selectedStatus]);
+
         ServiceLabor::where('id', $this->ServiceLaborId)->update(['status' => $this->selectedStatus]);
 
         // Atualiza o status na interface
         $this->dispatch('statusUpdated', $this->selectedStatus);
+    }*/
+    public function updateStatus(): void
+    {
+        try {
+            // Validar os dados
+            if (!$this->ServiceLaborId || !$this->selectedStatus) {
+                session()->flash('error', 'Dados inválidos. Não foi possível atualizar o status.');
+                return;
+            }
+
+            // Buscar o registro original
+            $serviceLabor = ServiceLabor::findOrFail($this->ServiceLaborId);
+            $originalValues = $serviceLabor->getOriginal();
+
+            // Atualizar o registro
+            $serviceLabor->update(['status' => $this->selectedStatus]);
+
+            // Registrar o log da atualização
+            DB::table('service_labor_logs')->insert([
+                'service_labor_id' => $serviceLabor->id,
+                'event' => 'updated',
+                'old_values' => json_encode($originalValues),
+                'new_values' => json_encode($serviceLabor->getChanges()),
+                'user_id' => Auth::id(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);//TODO: refatorar para corrigir a responsabilidade de operacoes no DB que deve ser feito no model
+
+            // Emite evento para interface
+            $this->dispatch('statusUpdated', $this->selectedStatus);
+
+            session()->flash('success', 'Status atualizado com sucesso.');
+        } catch (\Exception $e) {
+            Log::error('Erro ao atualizar status:', ['exception' => $e]);
+            session()->flash('error', 'Ocorreu um erro ao atualizar o status.');
+        }
     }
 
-    public function loadLaborDescription()
+
+    public function loadLaborDescription(): void
     {
         $serviceLabor = ServiceLabor::select('description')->where('id', $this->ServiceLaborId)->first();
         $this->dispatch('showLaborDescription', $serviceLabor->description);
     }
+
 
 
     protected function getTableColumns(): array
@@ -209,7 +288,7 @@ class ServiceRelationManager extends RelationManager
                         Forms\Components\TextInput::make('title')
                             ->required()
                             ->maxLength(255),
-                        Forms\Components\TextInput::make('parameters')
+                        Forms\Components\RichEditor::make('parameters')
 
                     ])
                     ->createOptionUsing(function ($data): void {
@@ -299,7 +378,7 @@ class ServiceRelationManager extends RelationManager
                                 ->view('livewire.labor-list-on-service-relation-manager')
                         ])->collapsible()
             ])
-            ->contentGrid(['sm' => 1])
+            ->contentGrid(['sm' => 2])
                             ->filters([
                                 //
                             ])
