@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\LaborImpediment;
 use App\Models\Service;
 use App\Models\ServiceLabor;
 use App\Models\User;
+use App\Observers\LaborImpedimentObserver;
 use App\Observers\ServiceLaborObserver;
 use Illuminate\Support\ServiceProvider;
 use App\Observers\ServiceObserver;
@@ -42,5 +44,6 @@ class AppServiceProvider extends ServiceProvider
 
         Service::observe(ServiceObserver::class);
         ServiceLabor::observe(ServiceLaborObserver::class);
+        LaborImpediment::observe(LaborImpedimentObserver::class);
     }
 }
