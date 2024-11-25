@@ -82,35 +82,49 @@ use Illuminate\Database\Eloquent\Collection;
             ->get()
             ->map(function ($log) {
                 try {
-                    $log->new_values = $log->new_values ? json_decode($log->new_values, true) : null;
-                    $log->old_values = $log->old_values ? json_decode($log->old_values, true) : null;
+                    // Decodifica os JSONs
+                    $newValues = $log->new_values ? json_decode($log->new_values, true) : null;
+                    $oldValues = $log->old_values ? json_decode($log->old_values, true) : null;
 
-                    if (is_array($log->new_values)) {
-                        $updatedValues = $log->new_values;
-
-                        foreach ($updatedValues as $key => $value) {
+                    // Formatação de datas em new_values
+                    if (is_array($newValues)) {
+                        foreach ($newValues as $key => $value) {
                             if (in_array($key, ['created_at', 'updated_at', 'deleted_at'])) {
                                 if (is_string($value) && strtotime($value)) {
-                                    $updatedValues[$key] = Carbon::parse($value)->format('d/m/Y H:i:s');
+                                    $newValues[$key] = Carbon::parse($value)->format('d/m/Y H:i:s');
                                 } else {
-                                    Log::warning("Invalid date format for key {$key}: {$value}");
+                                    Log::warning("ERRO AQUI Invalid date format for key {$key}: {$value}");
                                 }
                             }
                         }
 
-                        $log->new_values = $updatedValues;
+                        // Adiciona o avatar do usuário ao $newValues
+
+                            $newValues['user_avatar'] = app('userAvatar')($log->user_id);
+                            $oldValues['user_avatar'] = app('userAvatar')($log->user_id);
+                        Log::alert("log user_id: {$log->user_id}");
+
                     }
+
+                    // Retorna uma nova estrutura de dados
+                    return [
+                        'id' => $log->id,
+                        'created_at' => $log->created_at,
+                        'new_values' => $newValues,
+                        'old_values' => $oldValues,
+                    ];
+
                 } catch (\Exception $e) {
                     Log::error("Error processing log: {$e->getMessage()}");
+                    return null; // Em caso de erro, retorna null
                 }
-
-                return $log;
-            });
+            })->filter(); // Remove entradas nulas geradas por erros
     }
 
 
 
-    public function setServiceLaborId($id)
+
+        public function setServiceLaborId($id)
     {
         $this->ServiceLaborId = $id;
         $this->updateStatus();
@@ -392,11 +406,6 @@ use Illuminate\Database\Eloquent\Collection;
                                 Tables\Actions\EditAction::make()
                                     ->label('Status do serviço'),
                                 Tables\Actions\DeleteAction::make(),
-                            ])
-                            ->bulkActions([
-                                Tables\Actions\BulkActionGroup::make([
-                                    Tables\Actions\DeleteBulkAction::make(),
-                                ]),
                             ]);
 
     }

@@ -1,7 +1,7 @@
 <div class="m-y-3">
     @if($getState() != "")
-        <fieldset class="rounded-xl border border-gray-600 p-3 mt-2">
-            <table class="!w-full !min-w-max !table-auto !text-left !border !border-zinc-700 !rounded-sm p-3  m-3 mb-5">
+        <fieldset class="rounded-xl border border-gray-600 p-1 mt-2">
+            <table class="!w-full !min-w-max !table-auto !text-left !border !border-zinc-700 !rounded-sm p-1  m-1 mb-5">
                 <thead>
                 <tr>
                     <th class=" p-3">
@@ -50,9 +50,9 @@
                                              {{($item->title)}}
                                           </span>
                                     </button>
-                                    <span style="font-size: x-small">
-                                        Adicionado em: {{$item->pivot->created_at->format('d/m/Y H:i')}}
-                                    </span>
+                                    <div class="flex items-center mt-3" style="font-size: x-small">
+                                        <x-filament::icon icon="heroicon-o-calendar" class="w-4 h-4 mr-3" /> &nbsp;<span class="m-2">Adicionado em: {{$item->pivot->created_at->format('d/m/Y H:i')}}</span>
+                                    </div>
                                 </div>
                                 <div x-show="expanded"
                                      x-collapse.duration.500ms
@@ -92,12 +92,11 @@
                                     </div>
                                 </div>
 
-                                <span class="p-2" style="font-size: x-small">
+                                <div class="p-2" style="font-size: x-small">
                                     <div x-data="{ currentStatus: @entangle('status') }"
                                          x-init="$wire.on('statusUpdated', newStatus => currentStatus = newStatus)">
                                     </div>
                                     <div x-data="{ expanded: false }">
-                                        <small>
                                             <button @click="expanded = ! expanded"
                                                     class="inline-flex items-center px-1 py-1 pe-3 rounded-full whitespace-nowrap"
                                                     @switch($item->pivot->status)
@@ -189,7 +188,42 @@
                                         x-show="expanded"
                                     />
                                 </button>
-                                            <div style="font-size: small"
+                                        <div x-show="expanded" class="p-3 mt-3 " x-collapse
+                                             x-on:click="laborTitle = 'open =! open'">
+                                            <x-filament::section>
+                                                <form wire:submit.prevent="updateStatus"
+                                                      style="display: flex;
+                                             align-items: center;
+                                             gap: 4px; font-size: x-small">
+                                                    <x-slot name="heading" class="align-content-end whitespace-nowrap">
+                                            <span style="font-size: x-small"class="my-4">Alterar status da mão de obra</span>
+                                                        <button title="Cancelar"
+                                                                @click="expanded = ! expanded"
+                                                                style="background-color: #ef0543; margin-top:3px; color: white; "
+                                                                class="m-4 p-1 px-1 bg-gray-700 rounded small-button border-gray-600">
+                                                            <x-filament::icon
+                                                                icon="heroicon-m-x-mark"
+                                                                class="h-3 w-3 m-3"
+                                                                x-show="expanded"/>
+                                                        </button>
+                                                    </x-slot>
+                                                    <x-filament::input.wrapper>
+                                                        <x-filament::input.select style="font-size: x-small"
+                                                                                  wire:model="selectedStatus"
+                                                                                  class="small-select p-1"
+                                                                                  x-on:change="$wire.setServiceLaborId({{$item->pivot->id}}), expanded = ! expanded">
+                                                            <option value="" selected>Selecione uma opção</option>
+                                                            @foreach (\App\Enums\TypeOfLaborStatus::cases() as $status)
+                                                                <option value="{{ $status->value }}">
+                                                                    {{ $status->getLabel() }}
+                                                                </option>
+                                                            @endforeach
+                                                        </x-filament::input.select>
+                                                    </x-filament::input.wrapper>
+                                                </form>
+                                            </x-filament::section>
+                                        </div>
+                                            <div style=" font-size: small"
                                                  x-data="
                                                  {
                                                    logs: [],
@@ -203,67 +237,26 @@
                                                      const serviceLaborId = {{ $item->pivot->id }};
                                                      this.fetchLogs(serviceLaborId);
                                                    }
-                                                 }"><template x-if="logs.length > 0">
+                                                 }">
+                                                <template x-if="logs.length > 0">
                                                     <ul>
                                                         <template x-for="log in logs" :key="log.id">
-                                                          <li class="p-2 rounded-xl border border-gray-600 mb-3 mt-2"
-                                                              style="font-size: x-small">
-                                                            <span style="font-weight: bold"
+                                                          <li class="flex items-center m-2 p-2 rounded-xl mb-3 mt-2 border border-gray-600">
+                                                              <div x-html="log.new_values?.user_avatar || log.old_values?.user_avatar" class="m-2 p-2"></div>
+                                                              <div class="m-2 p-2">
+                                                                  <span style="font-weight: bold"
                                                                   x-text="log.new_values?.status || 'N/A'"></span>
-                                                            <span>em:</span>
-                                                            <span
-                                                                x-text="log.new_values?.updated_at || log.old_values?.updated_at"></span>
-
-                                                            <span>Por:</span><span
-                                                                  x-text="log.new_values?.user_id || log.old_values?.user_id"></span>
-                                                              <!-- <span x-text="log.old_values?.includedAt || log.new_values?.updated_at"></span>!-->
-
-                                                        </li>
-                                                 </template>
-                                         </ul>
-                                  </template>
-
-                           </div>
-                            </small>
-                            <div x-show="expanded" class="p-3 mt-3 " x-collapse
-                                 x-on:click="laborTitle = 'open =! open'">
-
-                                <x-filament::section>
-                                <form wire:submit.prevent="updateStatus"
-                                      style="display: flex;
-                                             align-items: center;
-                                             gap: 4px; font-size: x-small">
-                                        <x-slot name="heading" class="align-content-end whitespace-nowrap">
-                                            <span style="font-size: x-small"
-                                                  class="my-4">Alterar status da mão de obra</span>
-                                            <button title="Cancelar"
-                                                    @click="expanded = ! expanded"
-                                                    style="background-color: #ef0543; margin-top:3px; color: white; "
-                                                    class="m-4 p-1 px-1 bg-gray-700 rounded small-button border-gray-600">
-                                               <x-filament::icon
-                                                   icon="heroicon-m-x-mark"
-                                                   class="h-3 w-3 m-3"
-                                                   x-show="expanded"/>
-                                            </button>
-                                        </x-slot>
-                                        <x-filament::input.wrapper>
-                                            <x-filament::input.select style="font-size: x-small"
-                                                                      wire:model="selectedStatus"
-                                                                      class="small-select p-1"
-                                                                      x-on:change="$wire.setServiceLaborId({{$item->pivot->id}}), expanded = ! expanded">
-                                                <option value="" selected>Selecione uma opção</option>
-                                                @foreach (\App\Enums\TypeOfLaborStatus::cases() as $status)
-                                                    <option value="{{ $status->value }}">
-                                                            {{ $status->getLabel() }}
-                                                    </option>
-                                                @endforeach
-                                            </x-filament::input.select>
-                                        </x-filament::input.wrapper>
-                                </form>
-                            </x-filament::section>
-                            </div>
-                        </div>
-                    </span>
+                                                                  <br />
+                                                                  <span x-text="log.new_values?.updated_at || log.old_values?.updated_at"></span>
+                                                               <!--<span x-text="log.new_values?.user_avatar || log.old_values?.user_avatar"></span>==!-->
+                                                              </div>
+                                                          </li>
+                                                        </template>
+                                                    </ul>
+                                                </template>
+                                            </div>
+                                    </div>
+                                </div>
                             </x-filament::fieldset>
                     </tr>
                 @endforeach

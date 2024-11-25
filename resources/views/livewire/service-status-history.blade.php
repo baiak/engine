@@ -32,14 +32,15 @@
                   x-transition:enter.duration.500ms
                   x-transition:leave.duration.400ms
                   @click.outside="open = false"
-                  class="rounded-xl border border-gray-600 p-3 mt-2"
+                  class="rounded-xl border border-gray-600 p-3 mt-2 mb-3"
                   style="/*background-color: #9ca3af;*/
                          color: #333334;
                          font-size: small
                          ">
             @php
                 $firstIteration = true; // Variável de controle para exibir $oldValues apenas uma vez
-                $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://{$_SERVER['HTTP_HOST']}";            @endphp
+                $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://{$_SERVER['HTTP_HOST']}";
+            @endphp
 
             @foreach($getRecord()->statusHistory as $item)
                 @php
@@ -49,7 +50,7 @@
 
                 @if($firstIteration && isset($oldValues))
                     <fieldset
-                        class="m-2 mb-3 p-2 border border-gray-600 rounded-xl  whitespace-nowrap flex items-center space-x-1"
+                        class="m-2 mt-3 p-2 border border-gray-600 rounded-xl  whitespace-nowrap flex items-center space-x-1"
                         x-show="open"
                         x-transition.duration.1000ms
                         x-transition.scale.origin.top
@@ -57,19 +58,16 @@
                                 color: #d6d6d6">
                         <div class="flex flex-col items-center" style="margin-right: 10px">
                             <!-- Imagem de perfil redonda -->
-                            <div class="w-16 h-16 rounded-full overflow-hidden border border-gray-600">
+                            <div class="w-7 h-7 rounded-full overflow-hidden border border-gray-600">
                                 <img src="{{ $baseUrl }}/storage/{{ $item->user->profileImg }}"
                                      alt="Imagem de perfil de {{ $item->user->name }}"
-                                     class="w-full h-full object-cover">
+                                     x-tooltip="'{{ $item->user->name }}'">
                             </div>
-
-                            <!-- Nome do usuário abaixo da imagem -->
-                            <strong class="text-center text-sm">{{ $item->user->name }}</strong>
                         </div>
 
 
                         <div>
-                            <strong>Adicionado em:</strong>
+
                             {{ \Carbon\Carbon::parse($oldValues['created_at'])->format('d/m/Y - H:i') }}<br/>
                             <strong>Status:</strong> {{ $oldValues['status'] }}
                         </div>
@@ -88,16 +86,15 @@
                               x-transition.scale.origin.top>
                         <div class="flex flex-col items-center" style="margin-right: 10px">
                             <!-- Imagem de perfil redonda -->
-                            <div class="w-16 h-16 rounded-full overflow-hidden border border-gray-600">
+                            <div class="w-7 h-7 rounded-full overflow-hidden border border-gray-600">
                                 <img src="{{ $baseUrl }}/storage/{{ $item->user->profileImg }}"
                                      alt="Imagem de perfil de {{ $item->user->name }}"
-                                     class="w-full h-full object-cover">
+                                     x-tooltip="'{{ $item->user->name }}'">
+
                             </div>
-                            <!-- Nome do usuário abaixo da imagem -->
-                            <strong class="text-center text-sm">{{ $item->user->name }}</strong>
                         </div>
                         <div>
-                            {{ \Carbon\Carbon::parse($newValues['updated_at'])->format('d/m/Y - H:i') }}<br/>
+                            {{ $item->user->name }} - {{ \Carbon\Carbon::parse($newValues['updated_at'])->format('d/m/Y - H:i') }}<br/>
                             <strong>Status:</strong> {{ $newValues['status'] }}
                         </div>
                     </fieldset>
