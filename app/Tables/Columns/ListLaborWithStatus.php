@@ -6,7 +6,7 @@ use Filament\Tables\Columns\Column;
 
 class ListLaborWithStatus extends Column
 {
-    protected string $view = 'tables.columns.list-labor-with-status';
+    protected string $view = 'tables.columns.List-labor-with-status';
 
     public function openModal($recordId)
     {

@@ -6,12 +6,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\DB;
 
 
 class ServiceLabor extends Model
 
 {
+    use Notifiable;
     use HasFactory;
     protected $table = 'service_labors';
     protected $fillable =
@@ -52,6 +54,10 @@ class ServiceLabor extends Model
     public function user():HasOneOrMany
     {
         return $this->hasOne(User::class);
+    }
+    public function impediments()
+    {
+        return $this->hasMany(LaborImpediment::class);
     }
 
 

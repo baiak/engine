@@ -15,7 +15,7 @@ class ServiceLaborObserver
      */
     public function created(ServiceLabor $serviceLabor):void
     {
-        Log::info('ServiceLabor criado EBAA event triggered.', ['id' => $serviceLabor->id]);
+
 
         DB::table('service_labor_logs')->insert([
             'service_labor_id' => $serviceLabor->id,
@@ -34,7 +34,7 @@ class ServiceLaborObserver
     public function updated(ServiceLabor $serviceLabor): void
     {
 
-        Log::info('ServiceLabor atualizado event triggered.', ['id' => $serviceLabor->id]);
+       // Log::info('ServiceLabor atualizado event triggered.', ['id' => $serviceLabor->id]);
 
 
     }

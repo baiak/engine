@@ -30,7 +30,7 @@ use Livewire\Component;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables;
 use Filament\Forms;
-use Livewire\Livewire;
+use App\Providers;
 
 /*class ListLabor extends Component implements HasForms, HasTable
 {

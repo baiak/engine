@@ -13,6 +13,9 @@ return [
     | This will allow your users to receive real-time notifications.
     |
     */
+    'notifications' => [
+        'enabled' => true,
+    ],
 
     'broadcasting' => [
 

@@ -8,6 +8,7 @@ use App\Enums\TypeOfServiceStatus;
 use App\Livewire\ListLabor;
 use App\Models\Department;
 use App\Models\Labor;
+use App\Models\LaborImpediment;
 use App\Models\Order;
 use App\Models\Part;
 use App\Models\Service;
@@ -15,6 +16,7 @@ use App\Models\ServiceLabor;
 use App\Models\ServiceLaborLog;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Notifications\StatusUpdatedNotification;
 use App\Tables\Columns\listLaborWithStatus;
 use Carbon\Carbon;
 use Filament\Facades\Filament;
@@ -32,6 +34,8 @@ use Filament\Infolists\Components\Split;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\TextEntry\TextEntrySize;
 use Filament\Infolists\Infolist;
+
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Support\Enums\Alignment;
 use Filament\Support\View\Components\Modal;
@@ -51,6 +55,7 @@ use Illuminate\Support\Facades\Log;
 use Filament\Pages\Actions;
 use Illuminate\Validation\Rules\Enum;
 use Illuminate\Database\Eloquent\Collection;
+use app\livewire\LaborImpedimentForm;
 
 
 #[AllowDynamicProperties] class ServiceRelationManager extends RelationManager
@@ -67,19 +72,60 @@ use Illuminate\Database\Eloquent\Collection;
     public $status;
     public $selectedStatus;
     public $ServiceLaborId;
+    public $items;
+    public $pivot;
+    public $users;
+    public $service_labor_id;
+    public $reason;
+    public string $complained_id = '';
+    public $InputServiceLaborId;
+    public $impediment_reason;
+    public $responsible_user_id;
+    public $serviceLaborId;
+    public $showError;
+    public $showSuccess;
+    public $impedimento = [];
+    public $total;
+    public $impedimentId;
+    public $selectedImpedimentStatus;
+    public $observation;
 
-    protected $listeners = ['statusUpdated', 'fetchServiceLaborLogs'];
+
+    protected $rules = [ 'impediment_reason' => 'required|string|max:255', 'responsible_user_id' => 'required|exists:users,id', ];
+
+
+    protected $listeners = ['statusUpdated', 'fetchServiceLaborLogs', 'submit', 'countImpediments', 'totalsUpdated'];
 
     public function __construct()
     {
         //Log::info("ServiceRelationManager carregado."); // Log para confirmar carregamento
     }
 
+
+
+    public function insereAmerdaDaNotificacaoDoCaralho(): void
+    {
+        //notificacao
+        try {
+            $recipient = collect([Auth::user()]);
+            Log::info("Notificação: " . $recipient);
+            Notification::make()
+                ->title('Status atualizado')
+                ->sendToDatabase($recipient);
+        } catch (\Exception $e) {
+            Log::error("Erro ao enviar a notificação: " . $e->getMessage());
+            // Você pode lançar a exceção novamente ou tratá-la de forma personalizada
+            // throw $e;
+        }
+    }
+
+
     public function getServiceLaborLogs($serviceLaborId)
     {
         return ServiceLaborLog::where('service_labor_id', $serviceLaborId)
             ->orderByDesc('created_at')
             ->get()
+
             ->map(function ($log) {
                 try {
                     // Decodifica os JSONs
@@ -93,7 +139,7 @@ use Illuminate\Database\Eloquent\Collection;
                                 if (is_string($value) && strtotime($value)) {
                                     $newValues[$key] = Carbon::parse($value)->format('d/m/Y H:i:s');
                                 } else {
-                                    Log::warning("ERRO AQUI Invalid date format for key {$key}: {$value}");
+                                    Log::warning("ERRO Invalid date format for key {$key}: {$value}");
                                 }
                             }
                         }
@@ -102,7 +148,7 @@ use Illuminate\Database\Eloquent\Collection;
 
                             $newValues['user_avatar'] = app('userAvatar')($log->user_id);
                             $oldValues['user_avatar'] = app('userAvatar')($log->user_id);
-                        Log::alert("log user_id: {$log->user_id}");
+                        //Log::alert("log user_id: {$log->user_id}");
 
                     }
 
@@ -120,18 +166,14 @@ use Illuminate\Database\Eloquent\Collection;
                 }
             })->filter(); // Remove entradas nulas geradas por erros
     }
-
-
-
-
-        public function setServiceLaborId($id)
+    public function setServiceLaborId($id)
     {
         $this->ServiceLaborId = $id;
         $this->updateStatus();
         $this->loadLaborDescription();
+
+       // $this->countImpediments();
     }
-
-
 
     public function setRecordId($id)
     {
@@ -163,14 +205,7 @@ use Illuminate\Database\Eloquent\Collection;
         }
     }
 
-    /*public function updateStatus()
-    {
 
-        ServiceLabor::where('id', $this->ServiceLaborId)->update(['status' => $this->selectedStatus]);
-
-        // Atualiza o status na interface
-        $this->dispatch('statusUpdated', $this->selectedStatus);
-    }*/
     public function updateStatus(): void
     {
         try {
@@ -201,6 +236,35 @@ use Illuminate\Database\Eloquent\Collection;
             // Emite evento para interface
             $this->dispatch('statusUpdated', $this->selectedStatus);
 
+            //Notificacao
+            try {
+
+                // Enviar a notificação usando Laravel Notifications (não Filament)
+                $user = User::findOrFail(Auth::id());
+
+                $user->notify(new StatusUpdatedNotification($serviceLabor, $originalValues['status'], $this->selectedStatus));
+
+
+
+                //filament
+                /*Notification::make()
+                    ->title('Status Atualizado com Sucesso')
+                    ->body("O status de {$serviceLabor->title} foi alterado de '{$originalValues['status']}' para '{$this->selectedStatus}'.")
+                    ->icon('heroicon-o-check-circle')
+                    ->success()
+                    ->sendToDatabase(auth()->user())
+                    ->send();
+
+                Log::info("Usuário autenticado: " . (auth()->user() ? auth()->user()->id : 'Nenhum usuário autenticado'));
+                Log::info("ENTROU CERTO NESSA MERDA DE TRY CATCH " . auth()->user()->id);*/
+
+            } catch (\Exception $e) {
+
+                Log::error("Erro ao enviar notificação: " . $e->getMessage());
+
+            }
+
+
             session()->flash('success', 'Status atualizado com sucesso.');
         } catch (\Exception $e) {
             Log::error('Erro ao atualizar status:', ['exception' => $e]);
@@ -208,6 +272,116 @@ use Illuminate\Database\Eloquent\Collection;
         }
     }
 
+
+    //SESSAO DE IMPEDIMENTO
+    public function addServiceLaborIdImpediment($id){
+        $this->ServiceLaborId = $id;
+        $this->submitForm();
+        //Log::info("addServiceLaborIdImpediment carregado. serviceLaborId: ".$this->ServiceLaborId);
+           }
+
+
+    public function submitForm()
+    { //Log::info("submit carregado."); // Log para confirmar carregamento
+        try {
+            // Verifica se os campos obrigatórios estão preenchidos
+            if (empty($this->impediment_reason) || empty($this->responsible_user_id) || empty($this->ServiceLaborId)) {
+                throw new \Exception('Todos os campos devem ser preenchidos.');
+            }
+
+            $reason = $this->impediment_reason;
+            $complained_id = $this->responsible_user_id;
+            $setServiceLaborId = $this->ServiceLaborId;
+
+            // Cria o impedimento
+            DB::table('labor_impediments')->insert([
+                'service_labor_id' => $setServiceLaborId,
+                'complainant_id' => Auth::id(),
+                'complained_id' => $complained_id,
+                'reason' => $reason,
+                'status' =>'em aberto',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Mensagem de sucesso
+            session()->flash('success', 'Impedimento registrado com sucesso.');
+            $this->reset(['responsible_user_id', 'impediment_reason']);
+            $this->showSuccess = true;
+            $this->showError = false;
+
+
+
+
+        } catch (\Exception $e) {
+            // Mensagem de erro
+            session()->flash('error', 'Erro ao registrar impedimento: ' . $e->getMessage());
+            $this->showSuccess = false;
+            $this->showError = true;
+        }
+    }//submit
+
+
+    //contar
+
+
+    public array $totals = [];
+
+    public function countImpediments($id): int
+    {
+        $setServiceLaborId = $id;
+
+        $this->getTotalFromDB = DB::table('labor_impediments')
+            ->where('service_labor_id',  $setServiceLaborId)
+            ->count();
+        $this->totals["total_{$setServiceLaborId}"] = $this->getTotalFromDB;
+
+        return $this->totals["total_{$setServiceLaborId}"];
+
+    }
+    //contar
+
+    //atualizar status e log com resposta
+    public function setImpedimentFormId($id){
+        $this->impedimentId = $id;
+        $this->impedimentInsertResponse();
+    }
+    public function impedimentInsertResponse(): void
+    {
+        try {
+            // Log::info("impedimentInsertResponse carregado. selected_status: ".$this->selectedStatus);
+            $model = LaborImpediment::find($this->impedimentId);
+
+            if (!$model) {
+                throw new \Exception('Impedimento não encontrado.');
+            }
+
+            $logs = $model->logs ?? [];
+            $newLog = [
+                'user_id' => Auth::id(),
+                'selected_status' => $this->selectedImpedimentStatus,
+                'date' => date('d-m-Y - H:i:s'),
+                'observation' => $this->observation,
+            ];
+
+            $logs[] = $newLog;
+            $model->logs = $logs;
+            $model->update(['logs' => $logs, 'status' => $this->selectedImpedimentStatus]);
+
+            session()->flash('LogSuccess', 'Log salvo com sucesso!');
+            $this->dispatch('close-modal', id: 'impedimentModal');
+        } catch (\Exception $e) {
+            // Log the error message
+            Log::error('Erro ao salvar log: ' . $e->getMessage());
+
+            // Flash an error message to the session
+            session()->flash('LogError', 'Ocorreu um erro ao salvar o log. Por favor, tente novamente.');
+        }
+    }
+    //atualizar status e log com resposta
+
+
+    //SESSAO DE IMPEDIMENTO fim
 
     public function loadLaborDescription(): void
     {

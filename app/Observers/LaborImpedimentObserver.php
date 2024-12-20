@@ -3,15 +3,21 @@
 namespace App\Observers;
 
 use App\Models\LaborImpediment;
+use Illuminate\Support\Facades\DB;
 
 class LaborImpedimentObserver
 {
     /**
      * Handle the LaborImpediment "created" event.
      */
-    public function created(LaborImpediment $laborImpediment): void
+    public function created(LaborImpediment $laborImpediment): int
     {
-        //
+        $getTotalFromDB = DB::table('labor_impediments')
+            ->where('service_labor_id',  $laborImpediment)
+            ->count();
+        $total = $getTotalFromDB;
+
+        return $total;
     }
 
     /**
