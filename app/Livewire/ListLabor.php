@@ -5,9 +5,12 @@ namespace App\Livewire;
 use App\Enums\TypeOfLaborStatus;
 use App\Enums\TypeOfServiceStatus;
 use App\Models\Labor;
+use App\Models\Order;
 use App\Models\Part;
 use App\Models\Service;
 use App\Models\ServiceLabor;
+use App\Models\User;
+use App\Notifications\ServiceLaborCreateNotification;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Radio;
@@ -26,11 +29,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables;
 use Filament\Forms;
 use App\Providers;
+use RuntimeException;
 
 /*class ListLabor extends Component implements HasForms, HasTable
 {
@@ -188,7 +193,29 @@ class ListLabor extends Component implements HasForms, HasTable
                             ->required(),
                     ])
                    ->action(function ($data) {
-                        ServiceLabor::create($data);
+                       $serviceLabor=ServiceLabor::create($data);
+                       //enviando a notificacao ->TODO: FAZER UM FOREACH PARA ENVIAR A NOTIFICACAO PARA TODOS OS ADMINS
+                       $user = User::findOrFail(Auth::id());
+                       //buscar dados da ordem
+                       $order= Order::findOrFail($data['order_id']);
+                       $orderNumber = $order->order_number;
+                       try {
+                           $user->notify(new ServiceLaborCreateNotification(
+                               $serviceLabor,
+                               $user->name,
+                               $data['order_id'],
+                               $order->order_number,
+                               $order->order_number,
+                           ));
+                           Log::info('OPAsadasdads entrou no try da notificacao para criacao de mao de obra'.$serviceLabor);
+                       } catch (\Exception $e) {
+                           // Opcional: Faça o log da exceção para análise posterior
+                           Log::info('OPAAdasasd Erro ao enviar notificação de mão de obra');
+
+                           // Opcional: Retorne uma resposta ou notifique o usuário
+                           throw new RuntimeException('OPA..Falha ao enviar notificação. Por favor, tente novamente mais tarde.');
+                       }
+
                     })
             ])
             ->actions([

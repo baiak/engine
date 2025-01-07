@@ -6,6 +6,7 @@ use AllowDynamicProperties;
 use App\Enums\TypeOfLaborStatus;
 use App\Enums\TypeOfServiceStatus;
 use App\Livewire\ListLabor;
+use App\Models\Client;
 use App\Models\Department;
 use App\Models\Labor;
 use App\Models\LaborImpediment;
@@ -100,26 +101,6 @@ use app\livewire\LaborImpedimentForm;
     {
         //Log::info("ServiceRelationManager carregado."); // Log para confirmar carregamento
     }
-
-
-
-    public function insereAmerdaDaNotificacaoDoCaralho(): void
-    {
-        //notificacao
-        try {
-            $recipient = collect([Auth::user()]);
-            Log::info("Notificação: " . $recipient);
-            Notification::make()
-                ->title('Status atualizado')
-                ->sendToDatabase($recipient);
-        } catch (\Exception $e) {
-            Log::error("Erro ao enviar a notificação: " . $e->getMessage());
-            // Você pode lançar a exceção novamente ou tratá-la de forma personalizada
-            // throw $e;
-        }
-    }
-
-
     public function getServiceLaborLogs($serviceLaborId)
     {
         return ServiceLaborLog::where('service_labor_id', $serviceLaborId)
@@ -239,24 +220,18 @@ use app\livewire\LaborImpedimentForm;
             //Notificacao
             try {
 
+                //busca os dados da ordem de servico para gerar o link para compor o texto da notificacao
+                $getOrderDetails = Order::findOrFail($serviceLabor->order_id);
+                //busca os dados do usuario que esta alterando o status
+                $getUserDetails = User::findOrFail(Auth::id());
+
+
                 // Enviar a notificação usando Laravel Notifications (não Filament)
                 $user = User::findOrFail(Auth::id());
+                //mudar o id para os ids dos admin apenas
 
-                $user->notify(new StatusUpdatedNotification($serviceLabor, $originalValues['status'], $this->selectedStatus));
+                $user->notify(new StatusUpdatedNotification($serviceLabor, $originalValues['status'], $this->selectedStatus, $serviceLabor->order_id, $getUserDetails->name, $getOrderDetails->order_number));
 
-
-
-                //filament
-                /*Notification::make()
-                    ->title('Status Atualizado com Sucesso')
-                    ->body("O status de {$serviceLabor->title} foi alterado de '{$originalValues['status']}' para '{$this->selectedStatus}'.")
-                    ->icon('heroicon-o-check-circle')
-                    ->success()
-                    ->sendToDatabase(auth()->user())
-                    ->send();
-
-                Log::info("Usuário autenticado: " . (auth()->user() ? auth()->user()->id : 'Nenhum usuário autenticado'));
-                Log::info("ENTROU CERTO NESSA MERDA DE TRY CATCH " . auth()->user()->id);*/
 
             } catch (\Exception $e) {
 
@@ -573,6 +548,8 @@ use app\livewire\LaborImpedimentForm;
                             ->headerActions([
                                 Tables\Actions\CreateAction::make()
                                     ->label('Adicionar peça/serviço'),
+                                //notificacao ao criar o servico
+
                             ])
                             ->actions([
                                 Tables\Actions\ViewAction::make()

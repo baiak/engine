@@ -29,7 +29,7 @@ class LaborListOnServiceRelationManager extends Component
 
     public function loadItem($id)
     {
-        $item = Labor::find($id); // Substitua "Item" pelo seu modelo.
+        $item = Labor::find($id);
         $this->itemId = $item->id;
         $this->title = $item->title;
         $this->status = $item->pivot->status;

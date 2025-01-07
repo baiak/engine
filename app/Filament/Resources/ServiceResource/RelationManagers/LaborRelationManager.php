@@ -3,9 +3,12 @@
 namespace App\Filament\Resources\ServiceResource\RelationManagers;
 
 use App\Enums\TypeOfLaborStatus;
+use App\Models\Order;
 use App\Models\ServiceLabor;
 use App\Models\Labor;
 use App\Models\Service;
+use App\Models\User;
+use App\Notifications\ServiceLaborCreateNotification;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
@@ -14,10 +17,14 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use RuntimeException;
 
 class LaborRelationManager extends RelationManager
 {
     protected static string $relationship = 'labor';
+    public $serviceLabor;
 
     public function form(Form $form): Form
     {
@@ -81,6 +88,7 @@ class LaborRelationManager extends RelationManager
                 Tables\Actions\Action::make('Adicionar Mão de obra')
                     ->model(ServiceLabor::class)
                     ->action(function (array $data): void {
+                        Log::info('action');
                         // Criando um novo registro na tabela 'ServiceLabor'
                         ServiceLabor::create([
                             'user_id' => auth()->id(),
