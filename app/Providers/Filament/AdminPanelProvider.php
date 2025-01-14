@@ -31,8 +31,9 @@ class AdminPanelProvider extends PanelProvider
     {
 
         FilamentView::registerRenderHook(
-            PanelsRenderHook::SIDEBAR_NAV_START,
-            fn (): string => Blade::render("<livewire:notification />")
+            //PanelsRenderHook::SIDEBAR_NAV_START,
+            PanelsRenderHook::CONTENT_START,
+            fn (): string => Blade::render('<livewire:notification />')
         );
     }
 

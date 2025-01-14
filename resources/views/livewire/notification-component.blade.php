@@ -1,36 +1,65 @@
-<div x-data="{ open: false }">
-    <h3
-        @click="open = !open"
-        style="color: #9ca3af; font-weight: bold; margin-bottom: 1rem; cursor: pointer;">
-        Notificações
-        @if($unreadCount > 0)
+<div class="p-4">
+    <div x-data="{ open: false }" style="display: flex; flex-direction: column;">
+        <!-- Botão de notificações -->
+        <h3
+            @click="open = !open"
+            style="color: #6b7280; font-weight: bold; margin-bottom: 1rem; cursor: pointer; display: flex; align-items: center;">
+            Notificações
+            @if($unreadCount > 0)
+                <span style="background-color: #3b82f6; color: white; border-radius: 9999px; padding: 0.25rem 0.5rem; margin-left: 0.5rem; font-size: 0.875rem;">
+                    {{ $unreadCount }}
+                </span>
+            @endif
+        </h3>
 
-            <span style="background-color: #3b82f6; color: white; border-radius: 9999px; padding: 0.2rem 0.5rem; margin-left: 0.5rem; font-size: small;">
+        <!-- Lista de notificações -->
+        <div
+            x-show="open"
+            style="display: flex; flex-direction: column; gap: 0.75rem; background-color: white; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); border-radius: 0.5rem; margin-top: 0.5rem; padding: 1rem; max-height: 16rem; overflow-y: auto;"
+            x-transition>
+            @forelse ($notifications as $notification)
+                <div style="background-color: #3b3c3e; padding: 1rem; box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1); border-radius: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                    <span>{!! $notification->data['body'] ?? 'Mensagem sem título' !!}</span>
+                    <button
+                        wire:click="markAsRead('{{ $notification->id }}')"
+                        style="color: #3b82f6; text-decoration: underline; cursor: pointer;">
+                        Marcar como lida
+                    </button>
+                </div>
+            @empty
+                <div style="color: #9ca3af;">Sem notificações no momento.</div>
+            @endforelse
+        </div>
+    </div>
 
-                {{ $unreadCount }}
+    <!-- Modal com todas as notificações -->
+    <x-filament::modal>
+        <x-slot name="header">
+            <h2 style="font-size: 1.125rem; font-weight: 600;">Notificações</h2>
+        </x-slot>
 
-            </span>
+        <x-slot name="trigger">
+            <x-filament::button>
+                Ver todos
+            </x-filament::button>
+        </x-slot>
 
-        @endif
-
-    </h3>
-    <ul
-        x-show="open"
-        style="list-style-type: none; padding: 0; display: none; margin-top: 20px"
-        x-transition
-
-    >
-        @forelse ($notifications as $notification)
-            <li style="color: #1b1e21; padding: 1rem; background-color: #f7fafc; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); border-radius: 0.375rem; display: flex; justify-content: space-between; align-items: center;">
-                <span>{!!  $notification->data['body'] ?? 'Mensagem sem título' !!}</span>
-                <button
-                    wire:click="markAsRead('{{ $notification->id }}')"
-                    style="color: #3b82f6; text-decoration: underline; cursor: pointer;">
-                    Marcar como lida
-                </button>
-            </li>
-        @empty
-            <li style="color: #6b7280;">Sem notificações no momento.</li>
-        @endforelse
-    </ul>
+        <div style="padding: 1rem;">
+            <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem;">Todas as notificações</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                @forelse ($notifications as $notification)
+                    <div style="background-color: #f9fafb; padding: 1rem; box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1); border-radius: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                        <span>{!! $notification->data['body'] ?? 'Mensagem sem título' !!}</span>
+                        <button
+                            wire:click="markAsRead('{{ $notification->id }}')"
+                            style="color: #3b82f6; text-decoration: underline; cursor: pointer;">
+                            Marcar como lida
+                        </button>
+                    </div>
+                @empty
+                    <div style="color: #9ca3af;">Sem notificações no momento.</div>
+                @endforelse
+            </div>
+        </div>
+    </x-filament::modal>
 </div>
