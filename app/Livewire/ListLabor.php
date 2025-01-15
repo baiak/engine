@@ -207,10 +207,9 @@ class ListLabor extends Component implements HasForms, HasTable
                                $order->order_number,
                                $order->order_number,
                            ));
-                           Log::info('OPAsadasdads entrou no try da notificacao para criacao de mao de obra'.$serviceLabor);
                        } catch (\Exception $e) {
                            // Opcional: Faça o log da exceção para análise posterior
-                           Log::info('OPAAdasasd Erro ao enviar notificação de mão de obra');
+                           Log::info('Erro ao enviar notificação de mão de obra');
 
                            // Opcional: Retorne uma resposta ou notifique o usuário
                            throw new RuntimeException('OPA..Falha ao enviar notificação. Por favor, tente novamente mais tarde.');

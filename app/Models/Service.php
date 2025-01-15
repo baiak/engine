@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
+use Illuminate\Support\Facades\Log;
 
 class Service extends Model
 {
@@ -102,7 +103,6 @@ class Service extends Model
     {
         return $this->hasMany(ServiceAuditLog::class, 'service_id');
     }
-
 
     protected $casts = [
         'status' => TypeOfServiceStatus::class

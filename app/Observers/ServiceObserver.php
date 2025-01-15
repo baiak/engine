@@ -1,9 +1,11 @@
 <?php
 namespace App\Observers;
 
+use App\Models\Department;
 use App\Models\Service;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ServiceObserver
 {
@@ -18,6 +20,11 @@ class ServiceObserver
             'user_id' => Auth::id(),
             'created_at' => now(),
         ]);
+        //notificacao
+        $userData = $service->department->user->name;
+
+        //Log::info('Registro criado -'.$userData.'-', $service->toArray());
+
     }
 
     public function updated(Service $service): void

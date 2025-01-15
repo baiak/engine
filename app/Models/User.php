@@ -29,9 +29,9 @@ class User extends Authenticatable
         'profileImg',
         'is_admin'
     ];
-    function department(): HasOne
+    function department(): BelongsTo
     {
-        return $this->hasOne(Department::class);
+        return $this->belongsTo(Department::class);
     }
 
     function serviceAuditLog (): BelongsTo

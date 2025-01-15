@@ -65,7 +65,7 @@ use Illuminate\Notifications\Notification as FilamentNotification;
     {
         return [
             'title' => 'Mão de obra adicionada',
-            'body' => "{$this->userName} adicionou uma nova mão de obra à ordem de serviço: {$this->makeOrderLink}.<p><small>em: {$this->serviceLabor->created_at->format('d/m/Y - H:i:s')}</small></p>",
+        'body' => "<b>{$this->userName}</b>} adicionou uma nova mão de obra à ordem de serviço: {$this->makeOrderLink}.<p><small>em: {$this->serviceLabor->created_at->format('d/m/Y - H:i:s')}</small></p>",
             'user_id' => $this->userId,
             'order_id' => $this->orderId,
             'service_labor_id' => $this->serviceLabor->id ?? null,

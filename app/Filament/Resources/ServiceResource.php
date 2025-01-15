@@ -30,6 +30,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
 use League\CommonMark\Util\HtmlElement;
 use Nette\Utils\Html;
@@ -154,6 +155,7 @@ class ServiceResource extends Resource
                                 'sm' => 2,
                             ]),
 
+
                         Forms\Components\Section::make([
                             Grid::make([
                                 'default' => 1,
@@ -230,7 +232,20 @@ class ServiceResource extends Resource
                     ])
 
             ]);
+
     }
+    protected static function afterCreate($record): void
+    {
+        $departmentUser = $record->department?->user;
+
+        if ($departmentUser) {
+            //$departmentUser->notify(new ServiceCreate($record));
+            Log::info('OPAsadasdads entrou no try da notificacao para criacao de mao de obra' . $departmentUser);
+        }else{
+                Log::info('nao deu boa');
+            }
+        }
+
 
     public static function table(Table $table): Table
     {
