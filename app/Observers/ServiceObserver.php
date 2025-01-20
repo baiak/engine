@@ -3,6 +3,8 @@ namespace App\Observers;
 
 use App\Models\Department;
 use App\Models\Service;
+use App\Models\User;
+use App\Notifications\ServiceCreateNotification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -21,9 +23,49 @@ class ServiceObserver
             'created_at' => now(),
         ]);
         //notificacao
-        $userData = $service->department->user->name;
+        //$userData = $service->department->user;
+        $userData =  User::findOrFail($service->department->user->id);
+        $userAuth = User::findOrFail(Auth::id());
+        // Log::info('USERDATA -'.$userData);
+        //envia a notificacao para o usuario selecionado do departamento no form
 
-        //Log::info('Registro criado -'.$userData.'-', $service->toArray());
+        //$userDataId = $service->department->user->id;
+
+       // $userData->notify(new ServiceCreateNotification($service, $userData->name, $userData->id, $service->order_id, $service->order->order_number ));
+        //iterar sob uma query com filtragem de administrador e enviar notificacao para cada registro encontrado
+
+        //Log::info('Servico criado -'.$userData.'-', $service->toArray());
+
+        try {
+            $userData->notify(new ServiceCreateNotification(
+                $service,
+                $userAuth->name,
+                $userData->id,
+                $service->order_id,
+                $service->order->order_number
+            ));
+            //envia notificacao para todos os admins
+            //// Obtém todos os usuários administradores
+            $adminUsers = User::where('is_admin', 1)->get();
+            // Itera sobre os usuários e envia a notificação
+            foreach ($adminUsers as $userDataFor) {
+                $userDataFor->notify(new ServiceCreateNotification(
+                    $service,
+                    $userAuth->name,
+                    $userData->id,
+                    $service->order_id,
+                    $service->order->order_number
+                ));
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Erro ao enviar notificação:', [
+                'message' => $e->getMessage(),
+                'user_id' => $userData->id,
+                'service_id' => $service->id,
+            ]);
+
+        }
 
     }
 

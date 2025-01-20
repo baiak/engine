@@ -234,17 +234,7 @@ class ServiceResource extends Resource
             ]);
 
     }
-    protected static function afterCreate($record): void
-    {
-        $departmentUser = $record->department?->user;
 
-        if ($departmentUser) {
-            //$departmentUser->notify(new ServiceCreate($record));
-            Log::info('OPAsadasdads entrou no try da notificacao para criacao de mao de obra' . $departmentUser);
-        }else{
-                Log::info('nao deu boa');
-            }
-        }
 
 
     public static function table(Table $table): Table
