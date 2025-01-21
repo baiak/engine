@@ -3,9 +3,11 @@
 namespace App\Enums;
 
 use Filament\Support\Contracts\HasLabel;
+use Mokhosh\FilamentKanban\Concerns\IsKanbanStatus;
 
 enum TypeOforderStatus: string implements HasLabel
 {
+    use IsKanbanStatus;
     case aguardando_orcamento_servicos = 'Aguardando orçamento de serviços';
     case aguardando_aprovacao_cliente = 'Aguardando aprovacao do cliente';
     case aprovado = 'Aprovado';

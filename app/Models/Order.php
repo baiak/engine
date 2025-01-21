@@ -59,6 +59,18 @@ class Order extends Model
                 'description')
             ->withTimestamps();
     }
+    public function getClientNameAttribute(): string
+    {
+        return $this->client->name ?? 'Cliente Desconhecido';
+    }
+    public function getFormattedTitleAttribute(): string
+    {
+        $orderNumber = $this->order_number ?? 'Sem número';
+        $clientName = $this->client->name ?? 'Cliente Desconhecido';
+        $vehicleModel = $this->vehicle->factory.'/'.$this->vehicle->model ?? 'Carro Desconhecido';
+
+        return "{$orderNumber} - {$vehicleModel} - {$clientName}";
+    }
 
     protected $casts = [
         'status' => TypeOforderStatus::class
