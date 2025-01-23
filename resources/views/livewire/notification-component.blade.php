@@ -52,7 +52,10 @@
                         <span>{!! $notification->data['body'] ?? 'Mensagem sem título' !!}</span>
                         <button
                             wire:click="markAsRead('{{ $notification->id }}')"
-                            style="color: #3b82f6; text-decoration: underline; cursor: pointer;">
+                            style="color: #3b82f6; text-decoration: under
+
+
+                            line; cursor: pointer;">
                             Marcar como lida
                         </button>
                     </div>

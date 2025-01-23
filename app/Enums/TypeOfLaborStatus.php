@@ -8,7 +8,7 @@ use Filament\Support\Contracts\HasLabel;
 enum TypeOfLaborStatus: string implements HasLabel, HasIcon, HasColor
 {
 
-    case aguardando_aprovacao = 'Aguardando aprovacao';
+    case pendente = 'Pendente';
     case aprovado = 'Aprovado';
     case rejeitado = 'Rejeitado';
     case condenado = 'Condenado';
@@ -19,7 +19,7 @@ enum TypeOfLaborStatus: string implements HasLabel, HasIcon, HasColor
     public function getLabel(): string
     {
         return match ($this) {
-            self::aguardando_aprovacao=>'Aguardando aprovacao',
+            self::pendente=>'Pendente',
             self::aprovado => 'Aprovado',
             self::rejeitado => 'Rejeitado',
             self::condenado => 'Condenado',
@@ -31,7 +31,7 @@ enum TypeOfLaborStatus: string implements HasLabel, HasIcon, HasColor
     public function getIcon(): string
     {
         return match ($this) {
-            self::aguardando_aprovacao => 'pepicon-hourglass-circle',
+            self::pendente => 'pepicon-hourglass-circle',
             self::aprovado => 'heroicon-s-check',
             self::rejeitado => 'uiw-dislike-o',
             self::condenado => 'hugeicons-dead',
@@ -43,7 +43,7 @@ enum TypeOfLaborStatus: string implements HasLabel, HasIcon, HasColor
     public function getStyle(): string
     {
         return match ($this) {
-            self::aguardando_aprovacao => 'style="color: #854d0e; font-size: small"',
+            self::pendente => 'style="color: #854d0e; font-size: small"',
             self::aprovado => 'style=" color: #065f46; font-size: small"',
             self::rejeitado => 'style=" color: #1f2937; font-size: small"',
             self::condenado => ' style=" color: #1f2937; font-size: small"',
@@ -55,7 +55,7 @@ enum TypeOfLaborStatus: string implements HasLabel, HasIcon, HasColor
     public function getColor(): string
     {
         return match ($this) {
-            self::aguardando_aprovacao => '#854d0e',
+            self::pendente => '#854d0e',
             self::aprovado => '#065f46',
             self::rejeitado => '#1f2937',
             self::condenado => '#1f2937',

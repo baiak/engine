@@ -10,9 +10,9 @@
                 <x-filament::tabs.item @click="tab = 'tab2'" :alpine-active="'tab === \'tab2\''">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span>Impedimentos</span>
-                        <x-filament::badge color="info">
-                            5
-                        </x-filament::badge>
+                        <!--<x-filament::badge color="info">
+                            adicionar a quantidade de impedimentos
+                        </x-filament::badge>!-->
                     </div>
                 </x-filament::tabs.item>
 

@@ -1,8 +1,10 @@
 <?php
 namespace App\Observers;
 
+use App\Enums\TypeOfServiceStatus;
 use App\Models\Department;
 use App\Models\Service;
+use App\Models\ServiceLabor;
 use App\Models\User;
 use App\Notifications\ServiceCreateNotification;
 use Illuminate\Support\Facades\Auth;
@@ -80,6 +82,29 @@ class ServiceObserver
             'user_id' => Auth::id(),
             'created_at' => now(),
         ]);
+
+        $getStatus = $service->getChanges()['status'];
+        Log::info("Status mudado olha o json capturado ". $getStatus);
+
+        //logica para quando um servico for arrastado para aprovado, todas as maos de obra sao aprovadas também
+
+            if(in_array($getStatus, ['Aprovado', 'Pendente'])){
+               // Log::info("Entrou no if do aprovado o id do servico é ".$service->id);
+
+
+                //iterar sobre a tabela service_labors para acessar todas as maos de obras deste servico
+
+                $serviceLaborData = ServiceLabor::where('service_id', $service->id)->get();
+
+                foreach($serviceLaborData as $serviceLabor){
+                    //Log::info("aqui as maos de obra deste servico ".$serviceLabor->id);
+                    DB::table('service_labors')
+                        ->where('id', $serviceLabor->id)
+                        ->update([
+                        'status' => $getStatus,
+                    ]);
+                }
+            }
     }
 
     public function deleted(Service $service): void

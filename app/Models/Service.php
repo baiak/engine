@@ -13,9 +13,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Support\Facades\Log;
+use Spatie\EloquentSortable\Sortable;
+use Spatie\EloquentSortable\SortableTrait;
 
-class Service extends Model
+class Service extends Model implements Sortable
 {
+    use SortableTrait;
     use HasFactory;
     protected $fillable =
         [
@@ -103,6 +106,15 @@ class Service extends Model
     {
         return $this->hasMany(ServiceAuditLog::class, 'service_id');
     }
+    public function getFormattedTitleAttribute(): string
+    {
+        $orderNumber = $this->order->order_number ?? 'Sem número';
+        $clientName = $this->order->client->name ?? 'Cliente Desconhecido';
+        $vehicleModel = $this->order->vehicle->factory.'/'.$this->order->vehicle->model ?? 'Carro Desconhecido';
+
+        return "{$orderNumber} - {$vehicleModel} - {$clientName}";
+    }
+
 
     protected $casts = [
         'status' => TypeOfServiceStatus::class

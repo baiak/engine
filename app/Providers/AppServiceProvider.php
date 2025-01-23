@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Livewire\LaborImpedimentForm;
+use App\Models\Labor;
 use App\Models\LaborImpediment;
 use App\Models\Service;
 use App\Models\ServiceLabor;
@@ -57,6 +58,17 @@ class AppServiceProvider extends ServiceProvider
                     return $user->name;
                 } else {
                     return 'User Not Found';
+                }
+            };
+        });
+        app()->singleton('laborTitle', function () {
+            return function ($laborId) {
+                $labor = Labor::query()->where('id', $laborId)->first();
+
+                if ($labor) {
+                    return $labor->title;
+                } else {
+                    return 'labor Not Found';
                 }
             };
         });
