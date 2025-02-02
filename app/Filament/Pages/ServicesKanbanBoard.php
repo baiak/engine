@@ -50,6 +50,9 @@ use Mokhosh\FilamentKanban\Pages\KanbanBoard;
                 ])
                 ->action(function (array $data) {
                     //resetar form
+
+                    $this->selectedOrderAndDepartment_order_number = null;
+                    $this->selectedOrderAndDepartment_department = null;
                     $this->selectedDepartment = null;
                     // Almacena el valor seleccionado en una propiedad del componente
                     $this->selectedOrderNumber = $data['selectedOrderNumber'];
