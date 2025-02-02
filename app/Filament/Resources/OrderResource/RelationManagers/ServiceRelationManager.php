@@ -225,6 +225,7 @@ use app\livewire\LaborImpedimentForm;
                 //busca os dados do usuario que esta alterando o status
                 $getUserDetails = User::findOrFail(Auth::id());
 
+                //TODO COLOCAR ESTE CODIGO NO OBSERVER
 
                 // Enviar a notificação usando Laravel Notifications (não Filament)
                 $user = User::findOrFail(Auth::id());
@@ -390,7 +391,11 @@ use app\livewire\LaborImpedimentForm;
     {
         return $form
             ->schema([
-                Forms\Components\Hidden::make('order_id')
+                Forms\Components\TextInput::make('order_number')
+                    ->default(function (RelationManager $livewire) {
+                        return ($livewire->getOwnerRecord()->order_number);
+                    }),
+                Forms\Components\TextInput::make('order_id')
                     ->default(function (RelationManager $livewire) {
                         return ($livewire->getOwnerRecord()->id);
                     })

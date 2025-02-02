@@ -1,4 +1,9 @@
+@php
+    $mensagem = $this->getAdditionalData();
+@endphp
+
 <x-filament-panels::page>
+    <div>{!! $mensagem !!}</div>
     <div x-data wire:ignore.self class="md:flex overflow-x-auto overflow-y-hidden gap-2 pb-4">
         @foreach($statuses as $status)
             @include(static::$statusView)

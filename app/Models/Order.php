@@ -61,6 +61,7 @@ class Order extends Model implements Sortable
                 'description')
             ->withTimestamps();
     }
+
     public function getClientNameAttribute(): string
     {
         return $this->client->name ?? 'Cliente Desconhecido';

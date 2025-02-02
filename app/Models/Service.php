@@ -28,6 +28,7 @@ class Service extends Model implements Sortable
             'deadline',
             'status',
             'description',
+            'order_number',
         ];
     public function order(): BelongsTo
     {
