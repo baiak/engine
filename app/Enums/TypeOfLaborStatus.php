@@ -4,9 +4,12 @@ namespace App\Enums;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
+use Mokhosh\FilamentKanban\Concerns\IsKanbanStatus;
+
 
 enum TypeOfLaborStatus: string implements HasLabel, HasIcon, HasColor
 {
+    use IsKanbanStatus;
 
     case pendente = 'Pendente';
     case aprovado = 'Aprovado';

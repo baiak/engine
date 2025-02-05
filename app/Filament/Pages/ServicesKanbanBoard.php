@@ -46,17 +46,16 @@ use Mokhosh\FilamentKanban\Pages\KanbanBoard;
                         ->searchable() // Permite buscar en la lista
                         ->reactive() // Hace que el campo sea reactivo
                         ->required() // Asegura que el usuario seleccione un valor
-                        ->rules(['exists:services,order_number']), // Valida que el valor exista en la base de datos
+                        ->rules(['exists:services,order_number'])// Valida que el valor exista en la base de datos
+                        ->live(),
                 ])
                 ->action(function (array $data) {
                     //resetar form
-
                     $this->selectedOrderAndDepartment_order_number = null;
                     $this->selectedOrderAndDepartment_department = null;
                     $this->selectedDepartment = null;
                     // Almacena el valor seleccionado en una propiedad del componente
                     $this->selectedOrderNumber = $data['selectedOrderNumber'];
-
                 }),
 
             Action::make('filterByClientName')
@@ -78,6 +77,7 @@ use Mokhosh\FilamentKanban\Pages\KanbanBoard;
                         ->searchable() // Permite buscar en la lista
                         ->reactive() // Hace que el campo sea reactivo
                         ->required() // Asegura que el usuario seleccione un valor
+                        ->live()
                 ])
                 ->action(function (array $data) {
                     //resetar form
@@ -86,7 +86,6 @@ use Mokhosh\FilamentKanban\Pages\KanbanBoard;
                     $this->selectedDepartment = null;
                     // Almacena el valor seleccionado en una propiedad del componente
                     $this->selectedOrderNumber = $data['selectedClientName'];
-
                 }),
 
             Action::make('filterByDepartment')
@@ -219,9 +218,6 @@ use Mokhosh\FilamentKanban\Pages\KanbanBoard;
 
         return 'Exibindo todos os serviços de todas as ordens';
     }
-
-
-
 
 
     protected static string $view = 'service-kanban.kanban-board';

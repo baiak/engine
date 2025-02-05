@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 use Illuminate\Notifications\Notifiable;
@@ -36,20 +37,38 @@ class ServiceLabor extends Model
     {
         return $this->hasMany(ServiceLaborLog::class, 'service_labor_id');
     }
-    public function labor():HasOneOrMany
+    public function labor():BelongsTo
     {
-        return $this->hasOne(Labor::class);
+        return $this->belongsTo(Labor::class, 'labor_id');
     }
 
-    public function service():HasOneOrMany
+    public function service():BelongsTo
     {
-        return $this->hasOne(Service::class);
+        return $this->belongsTo(Service::class, 'service_id');
     }
 
     public function order():HasOneOrMany
     {
         return $this->hasOne(Order::class);
     }
+
+    public function getOrderDetails(): BelongsTo
+    {
+         return $this->belongsTo(Order::class, 'order_id');
+    }
+
+    public function getVehicleDetailsAttribute()
+    {
+        if (!$this->service || !$this->service->order || !$this->service->order->vehicle) {
+            return 'Sem veículo';
+        }
+
+        $vehicle = $this->service->order->vehicle;
+
+        return "{$vehicle->factory}/{$vehicle->model}/{$vehicle->motor}";
+    }
+
+
 
     public function user():HasOneOrMany
     {
@@ -58,6 +77,10 @@ class ServiceLabor extends Model
     public function impediments()
     {
         return $this->hasMany(LaborImpediment::class);
+    }
+    public function scopeOrderNumberById($id)
+    {
+        return Order::where('id', $id)->value('order_number');
     }
 
 

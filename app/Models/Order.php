@@ -35,7 +35,7 @@ class Order extends Model implements Sortable
     }
     public function vehicle(): BelongsTo
     {
-        return $this->belongsTo(Vehicle::class);
+        return $this->belongsTo(Vehicle::class, 'vehicle_id');
     }
     public function service(): HasMany
     {

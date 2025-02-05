@@ -75,6 +75,7 @@ class AppServiceProvider extends ServiceProvider
 
 
 
+
         Service::observe(ServiceObserver::class);
         ServiceLabor::observe(ServiceLaborObserver::class);
         //LaborImpediment::observe(LaborImpedimentObserver::class);
