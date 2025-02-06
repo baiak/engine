@@ -56,7 +56,7 @@ use Mokhosh\FilamentKanban\Pages\KanbanBoard;
                     \Filament\Forms\Components\Select::make('selectedClientName')
                         ->label('Cliente')
                         ->options(
-                            Order::with('client','vehicle') // Carrega o relacionamento com Cliente e veiculo
+                            Order::with('client', 'vehicle') // Carrega o relacionamento com Cliente e veiculo
                             ->get()
                                 ->mapWithKeys(function ($order) {
                                     // Formata a chave e o valor para o select
@@ -132,7 +132,6 @@ use Mokhosh\FilamentKanban\Pages\KanbanBoard;
                     //resetar form
                     $this->selectedOrderNumber = null;
                     $this->selectedDepartment = null;
-
                     $this->selectedOrderAndDepartment_order_number = $data['selectedOrderNumber'];
                     $this->selectedOrderAndDepartment_department = $data['selectedDepartment'];
                 })
@@ -140,9 +139,11 @@ use Mokhosh\FilamentKanban\Pages\KanbanBoard;
     }
 
 
-    protected function getOrderNumber($id){
-        return([Order::query()->where('id', $id)->get()]);
+    protected function getOrderNumber($id)
+    {
+        return ([Order::query()->where('id', $id)->get()]);
     }
+
     protected static string $model = ServiceLabor::class;
     protected static string $statusEnum = TypeOfLaborStatus::class;
 
@@ -155,17 +156,20 @@ use Mokhosh\FilamentKanban\Pages\KanbanBoard;
     public bool $disableEditModal = true;
 
 
-   /* protected function records(): \Illuminate\Support\Collection {
-        return ServiceLabor::with('getOrderDetails', 'labor', 'service')->get();
-    }*/
+    /* protected function records(): \Illuminate\Support\Collection {
+         return ServiceLabor::with('getOrderDetails', 'labor', 'service')->get();
+     }*/
+
 
     protected function records(): \Illuminate\Support\Collection
-    {     // Se nenhum filtro estiver definido, retorna todos os registros
+    {
+        // Se nenhum filtro estiver definido, retorna todos os registros
         if (
             empty($this->selectedOrderNumber) &&
             empty($this->selectedDepartment) &&
             (empty($this->selectedOrderAndDepartment_order_number) || empty($this->selectedOrderAndDepartment_department))
-        ) {
+        )
+        {
             return ServiceLabor::all();
         }
         /*return Service::query()
@@ -182,7 +186,7 @@ use Mokhosh\FilamentKanban\Pages\KanbanBoard;
             )
             ->get();-*/
 
-        return ServiceLabor::with('labor', 'service')
+        /*return ServiceLabor::with('labor', 'service')
             ->when($this->selectedOrderNumber, function ($query) {
                 return $query->whereHas('service', function ($subQuery) {
                     $subQuery->where('order_number', $this->selectedOrderNumber);
@@ -199,7 +203,35 @@ use Mokhosh\FilamentKanban\Pages\KanbanBoard;
                         ->where('order_number', $this->selectedOrderAndDepartment_order_number);
                 });
             })
-            ->get();
+            ->get();*/
+        // Start with the base query
+        $query = ServiceLabor::with('labor', 'service');
+
+        // Filter by selected order number
+        if ($this->selectedOrderNumber) {
+            $query->whereHas('service', function ($subQuery) {
+                $subQuery->where('order_number', $this->selectedOrderNumber);
+            });
+        }
+
+        // Filter by selected department
+        if ($this->selectedDepartment) {
+            $query->whereHas('service', function ($subQuery) {
+                $subQuery->where('department_id', $this->selectedDepartment);
+            });
+        }
+
+        // Filter by selected order and department
+        if ($this->selectedOrderAndDepartment_order_number && $this->selectedOrderAndDepartment_department) {
+            $query->whereHas('service', function ($subQuery) {
+                $subQuery->where('order_number', $this->selectedOrderAndDepartment_order_number)
+                    ->where('department_id', $this->selectedOrderAndDepartment_department);
+            });
+        }
+
+        // Execute the query and return the results
+        return $query->get();
+
     }
 
 }
