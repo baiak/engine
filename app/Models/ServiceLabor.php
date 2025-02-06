@@ -7,11 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\DB;
 
 
-class ServiceLabor extends Model
+class ServiceLabor extends Pivot
 
 {
     use Notifiable;
@@ -49,7 +50,7 @@ class ServiceLabor extends Model
 
     public function order():HasOneOrMany
     {
-        return $this->hasOne(Order::class);
+        return $this->hasOne(Order::class, 'order_id');
     }
 
     public function getOrderDetails(): BelongsTo
