@@ -8,133 +8,78 @@ use App\Models\Department;
 use App\Models\Order;
 use App\Models\Service;
 use App\Models\ServiceLabor;
+use App\Traits\HasHeaderActions;
 use Filament\Actions\Action;
 use Illuminate\Support\Collection;
 use Mokhosh\FilamentKanban\Pages\KanbanBoard;
 
 #[AllowDynamicProperties] class ServiceLaborBoard extends KanbanBoard
 {
+    use HasHeaderActions;
     public $selectedOrderNumber;
     public $selectedDepartment;
 
     public $selectedOrderAndDepartment;
     public $selectedOrderAndDepartment_order_number;
     public $selectedOrderAndDepartment_department;
+    public $selectedClient;
 
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('edit'),
+            Action::make('filterForm')
+            ->label('Filtrar')
+            ->form([
+                //filtrar por numero de ordem
+                \Filament\Forms\Components\Select::make('selectedOrderNumber')
+                    ->label('Número de Ordem')
+                    ->options(
+                        Service::pluck('order_number', 'order_number') // Más eficiente
+                    )
+                    ->placeholder('Selecione uma ordem')
+                    ->searchable() // Permite buscar en la lista
+                    ->reactive() // Hace que el campo sea reactivo
+                    ->rules(['exists:services,order_number'])// Valida que el valor exista en la base de datos
+                    ->live(),
 
-            Action::make('filterByOrderNumber')
-                ->label('Filtrar por ordem') // Mejor etiqueta para la acción
-                ->form([
-                    \Filament\Forms\Components\Select::make('selectedOrderNumber')
-                        ->label('Número de Ordem')
-                        ->options(
-                            Service::pluck('order_number', 'order_number') // Más eficiente
-                        )
-                        ->placeholder('Seleccione un número de orden')
-                        ->searchable() // Permite buscar en la lista
-                        ->reactive() // Hace que el campo sea reactivo
-                        ->required() // Asegura que el usuario seleccione un valor
-                        ->rules(['exists:services,order_number'])// Valida que el valor exista en la base de datos
-                        ->live(),
-                ])
-                ->action(function (array $data) {
-                    //resetar form
-                    $this->selectedOrderAndDepartment_order_number = null;
-                    $this->selectedOrderAndDepartment_department = null;
-                    $this->selectedDepartment = null;
-                    // Almacena el valor seleccionado en una propiedad del componente
-                    $this->selectedOrderNumber = $data['selectedOrderNumber'];
-                }),
+                //filtrar por nome de cliente
+                \Filament\Forms\Components\Select::make('selectedClientName')
+                    ->label('Cliente')
+                    ->options(
+                        Order::with('client') // Carrega o relacionamento com Cliente e veiculo
+                        ->get()
+                            ->mapWithKeys(function ($order) {
+                                // Formata a chave e o valor para o select
+                                return [
+                                    $order->client_id => "{$order->client->name}"
+                                ];
+                            })
+                    )
+                    ->searchable(),
 
-            Action::make('filterByClientName')
-                ->label('Filtrar por cliente')
-                ->form([
-                    \Filament\Forms\Components\Select::make('selectedClientName')
-                        ->label('Cliente')
-                        ->options(
-                            Order::with('client', 'vehicle') // Carrega o relacionamento com Cliente e veiculo
-                            ->get()
-                                ->mapWithKeys(function ($order) {
-                                    // Formata a chave e o valor para o select
-                                    return [
-                                        $order->order_number => "Ordem :{$order->order_number} - {$order->client->name} - {$order->vehicle->factory}/{$order->vehicle->model}"
-                                    ];
-                                })
-                        )
-                        ->placeholder('Selecione o cliente')
-                        ->searchable() // Permite buscar en la lista
-                        ->reactive() // Hace que el campo sea reactivo
-                        ->required() // Asegura que el usuario seleccione un valor
-                        ->live()
-                ])
-                ->action(function (array $data) {
-                    //resetar form
-                    $this->selectedOrderAndDepartment_order_number = null;
-                    $this->selectedOrderAndDepartment_department = null;
-                    $this->selectedDepartment = null;
-                    // Almacena el valor seleccionado en una propiedad del componente
-                    $this->selectedOrderNumber = $data['selectedClientName'];
-                }),
 
-            Action::make('filterByDepartment')
-                ->label('Filtrar por departamento')
-                ->form([
-                    \Filament\Forms\Components\Select::make('selectedDepartment')
-                        ->label('Departamento')
-                        ->options(
-                            Department::with('user') // Carrega o relacionamento
-                            ->get()
-                                ->mapWithKeys(function ($department) {
-                                    // Formata a chave e o valor para o select
-                                    return [
-                                        $department->id => "{$department->title} - {$department->user->name}"
-                                    ];
-                                })
-                        )
-                        ->placeholder('Selecione o departamento')
-                        ->searchable() // Permite buscar en la lista
-                        ->reactive() // Hace que el campo sea reactivo
-                        ->required() // Asegura que el usuario seleccione un valor
-                ])
-                ->action(function (array $data) {
-                    //resetar form
-                    $this->selectedOrderAndDepartment_order_number = null;
-                    $this->selectedOrderAndDepartment_department = null;
-                    $this->selectedOrderNumber = null;
-                    // Almacena el valor seleccionado en una propiedad del componente
-                    $this->selectedDepartment = $data['selectedDepartment'];
-                }),
-
-            Action::make('filterByOrderNumberAndDepartment')
-                ->label('Filtrar por Ordem e Departamento')
-                ->form([
-                    \Filament\Forms\Components\Select::make('selectedOrderNumber')
-                        ->options(
-                            Service::pluck('order_number', 'order_number')
-                        ),
-                    \Filament\Forms\Components\Select::make('selectedDepartment')
-                        ->options(
-                            Department::with('user') // Carrega o relacionamento
-                            ->get()
-                                ->mapWithKeys(function ($department) {
-                                    // Formata a chave e o valor para o select
-                                    return [
-                                        $department->id => "{$department->title} - {$department->user->name}"
-                                    ];
-                                })
-                        )
-                ])
-                ->action(function (array $data) {
-                    //resetar form
-                    $this->selectedOrderNumber = null;
-                    $this->selectedDepartment = null;
-                    $this->selectedOrderAndDepartment_order_number = $data['selectedOrderNumber'];
-                    $this->selectedOrderAndDepartment_department = $data['selectedDepartment'];
-                })
+                 //filtrar por departamento
+                 \Filament\Forms\Components\Select::make('selectedDepartment')
+                     ->label('Departamento')
+                     ->options(
+                         Department::with('user') // Carrega o relacionamento
+                         ->get()
+                             ->mapWithKeys(function ($department) {
+                                 // Formata a chave e o valor para o select
+                                 return [
+                                     $department->id => "{$department->title} - {$department->user->name}"
+                                 ];
+                             })
+                     )
+                     ->placeholder('Selecione o departamento')
+                     ->searchable() // Permite buscar en la lista
+                     ->reactive() // Hace que el campo sea reactivo
+            ])
+            ->action(function(array $data){
+                $this->selectedOrderNumber = $data['selectedOrderNumber'];
+                $this->selectedClientName = $data['selectedClientName'];
+                $this->selectedDepartment = $data['selectedDepartment'];
+            }),
         ];
     }
 
@@ -211,6 +156,13 @@ use Mokhosh\FilamentKanban\Pages\KanbanBoard;
         if ($this->selectedOrderNumber) {
             $query->whereHas('service', function ($subQuery) {
                 $subQuery->where('order_number', $this->selectedOrderNumber);
+            });
+        }
+
+        // Filter by selected client
+        if ($this->selectedClient) {
+            $query->whereHas('order', function ($subQuery) {
+                $subQuery->where('client_id', $this->selectedClient);
             });
         }
 
