@@ -15,6 +15,18 @@ use Illuminate\Support\Facades\DB;
 class ServiceLabor extends Pivot
 
 {
+    protected static function booted()
+    {
+        static::created(function ($serviceLabor) {
+            $serviceLabor->logs()->create([
+                'event' => 'created',
+                'old_values' => null,
+                'new_values' => json_encode($serviceLabor->getAttributes()),
+                'user_id' => auth()->id(),
+            ]);
+        });
+    }
+
     use Notifiable;
     use HasFactory;
     protected $table = 'service_labors';
@@ -48,9 +60,9 @@ class ServiceLabor extends Pivot
         return $this->belongsTo(Service::class, 'service_id');
     }
 
-    public function order():HasOneOrMany
+    public function order():BelongsTo
     {
-        return $this->hasOne(Order::class, 'order_id');
+        return $this->belongsTo(Order::class);
     }
 
     public function getOrderDetails(): BelongsTo

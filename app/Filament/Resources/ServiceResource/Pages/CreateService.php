@@ -19,7 +19,6 @@ class CreateService extends CreateRecord
 
 protected function beforeCreate(): void
 {
-    Log::info("beforeCreate carregado TESTE AQUI-> user:".auth()->user()->$this->id); // Log para confirmar carregamento
     $recipient= auth()->user()->$this->id;
      Notification::make()
      ->title('Novo serviço no sistema')

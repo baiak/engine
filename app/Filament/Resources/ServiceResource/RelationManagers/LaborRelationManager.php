@@ -88,7 +88,6 @@ class LaborRelationManager extends RelationManager
                 Tables\Actions\Action::make('Adicionar Mão de obra')
                     ->model(ServiceLabor::class)
                     ->action(function (array $data): void {
-                        Log::info('action');
                         // Criando um novo registro na tabela 'ServiceLabor'
                         ServiceLabor::create([
                             'user_id' => auth()->id(),

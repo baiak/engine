@@ -111,8 +111,8 @@ use Mokhosh\FilamentKanban\Pages\KanbanBoard;
         // Se nenhum filtro estiver definido, retorna todos os registros
         if (
             empty($this->selectedOrderNumber) &&
-            empty($this->selectedDepartment) &&
-            (empty($this->selectedOrderAndDepartment_order_number) || empty($this->selectedOrderAndDepartment_department))
+            empty($this->selectedDepartment)&&
+            empty($this->selectedClientName)
         )
         {
             return ServiceLabor::all();
@@ -150,7 +150,7 @@ use Mokhosh\FilamentKanban\Pages\KanbanBoard;
             })
             ->get();*/
         // Start with the base query
-        $query = ServiceLabor::with('labor', 'service');
+        $query = ServiceLabor::with('labor', 'service', 'order');
 
         // Filter by selected order number
         if ($this->selectedOrderNumber) {
@@ -161,6 +161,7 @@ use Mokhosh\FilamentKanban\Pages\KanbanBoard;
 
         // Filter by selected client
         if ($this->selectedClient) {
+
             $query->whereHas('order', function ($subQuery) {
                 $subQuery->where('client_id', $this->selectedClient);
             });

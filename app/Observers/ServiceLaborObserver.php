@@ -14,7 +14,7 @@ class ServiceLaborObserver
     /**
      * Handle the ServiceLabor "created" event.
      */
-    public function created(ServiceLabor $serviceLabor):void
+    public function saved(ServiceLabor $serviceLabor):void
     {
 
         DB::table('service_labor_logs')->insert([

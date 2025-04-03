@@ -26,7 +26,6 @@ class EditService extends EditRecord
 
     protected function afterSave(): void
     {
-        Log::info("afterSave carregado -> user:".auth()->user()); // Log para confirmar carregamento
         Notification::make()
             ->title('Servico atualizado')
             ->sendToDatabase(auth()->user());
