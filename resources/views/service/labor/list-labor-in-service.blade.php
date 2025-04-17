@@ -39,13 +39,6 @@
         @endforeach
         </tbody>
     </table>
-
-    <script>
-        function openEditModal(id) {
-
-            window.alert('bosta');
-        }
-    </script>
 @endif
 
 

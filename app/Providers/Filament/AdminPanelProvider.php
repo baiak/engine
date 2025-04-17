@@ -40,7 +40,7 @@ class AdminPanelProvider extends PanelProvider
     public function panel(Panel $panel): Panel
     {
         return $panel
-            //->viteTheme('resources/css/app.css')
+
             ->default()
             ->id('admin')
             ->path('admin')

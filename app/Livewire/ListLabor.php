@@ -112,13 +112,15 @@ class ListLabor extends Component implements HasForms, HasTable
 
                            /* ->formatStateUsing(fn ($state) => $state instanceof TypeOfLaborStatus ? $state->getIcon() : TypeOfLaborStatus::tryFrom($state)?->getIcon() ?? 'heroicon-o-question-mark-circle')
                             ->icon(fn ($state) => $state instanceof TypeOfLaborStatus ? $state->getIcon() : TypeOfLaborStatus::tryFrom($state)?->getIcon() ?? 'heroicon-o-question-mark-circle'),*/
-                           ->formatStateUsing(fn ($state) =>
+
+                           /*->formatStateUsing(fn ($state) =>
                            $state instanceof TypeOfLaborStatus
                                ? "<span class='inline-flex items-center whitespace-nowrap' {$state->getStyle()}>
                                  <i class='{$state->getIcon()}'</i>{$state->getLabel()}</span>"
                                : (TypeOfLaborStatus::tryFrom($state)?->getLabel() ?? 'Desconhecido')
                            )
-                            ->html() // Habilita HTML para permitir ícones inline
+
+                            ->html() // Habilita HTML para permitir ícones inline*/
 
                     ])->alignment(Alignment::End)
                 ]),
@@ -167,7 +169,7 @@ class ListLabor extends Component implements HasForms, HasTable
                                 return [];
                             })
                             ->createOptionForm([
-                                Forms\Components\Hidden::make('part_id')
+                                Forms\Components\TextInput::make('part_id')
                                     ->default($this->ServiceLabor->part_id),
                                 Forms\Components\TextInput::make('title')
                                     ->label('Titulo da mão de obra')

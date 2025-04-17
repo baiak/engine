@@ -255,14 +255,8 @@
                         style="padding:0.60em; background-color: #2b2f32; margin-right: 3px; font-size: x-small; color: white; position: relative;"
                         @mouseenter="showText = true"
                         @mouseleave="showText = false">
-
                     <!-- Ícone -->
-                    <x-filament::icon
-                        icon="heroicon-o-plus-circle"
-                        class="h-4 w-4"
-                        style="margin-right: 5px;"/>
-
-
+                    <x-icon.add-impediment-icon class="h-5 w-5" style="margin-right: 5px;" />
                     <!-- Tooltip com texto -->
                     <span x-show="showText" x-transition
                           style="transition: opacity 0.6s; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
@@ -286,31 +280,7 @@
         <!--modal para visualizar impedimento !-->
         <x-filament::modal>
             <x-slot name="trigger" x-data="{ showText: false }">
-                <button class="rounded-md p-1 m-2"
-                        style="background-color: #2b2f32; color:#FFFFFF;  font-size: x-small; position: relative;"
-                        @mouseenter="showText = true"
-                        @mouseleave="showText = false">
-                    <span class="inline-flex items-center" style="align-items: center;">
-                        <!-- Ícone -->
-                        <x-filament::icon
-                            icon="clarity-bubble-exclamation-solid"
-                            class="h-4 w-4"
-                            style="margin-right: 5px;"/>
-
-                        <!-- Contador  -->
-                        <span>
-                            @include('livewire.impediments.impediment-counter', ['service_labor_id' => $item->pivot->id])
-                        </span>
-                    </span>
-
-                    <!-- Tooltip com texto -->
-                    <span x-show="showText" x-transition
-                          style="transition: opacity 0.6s; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
-                     background-color: #374151; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem;
-                     white-space: nowrap; opacity: 0.9;">
-                        Visualizar impedimentos
-                    </span>
-                </button>
+                @include('livewire.impediments.view-impediments-button', ['service_labor_id' => $item->pivot->id])
             </x-slot>
 
             <!-- Conteúdo do Modal -->

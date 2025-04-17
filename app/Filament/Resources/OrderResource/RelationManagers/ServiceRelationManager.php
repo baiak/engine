@@ -515,6 +515,7 @@ use app\livewire\LaborImpedimentForm;
                 Tables\Columns\Layout\Stack::make([
 
                     Tables\Columns\TextColumn::make('part_id')
+                       // ->extraAttributes(['class' => 'bg-black'])
                         ->weight('bold')
                         ->size('lg')
                         ->getStateUsing(function ($record) {

@@ -98,6 +98,10 @@ class Service extends Model implements Sortable
 
         return $changes;
     }
+    public function ServiceLabor(): BelongsTo
+    {
+        return $this->belongsTo(ServiceLabor::class);
+    }
     public function serviceAuditLog(): HasOne
     {
         return $this->hasOne(ServiceAuditLog::class);

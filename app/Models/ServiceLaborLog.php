@@ -2,11 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ServiceLaborLog extends Model
 {
@@ -19,13 +16,9 @@ class ServiceLaborLog extends Model
         'new_values',
         'user_id'
     ];
-    public function ServiceLabor(): BelongsTo
+
+    public function serviceLabor(): BelongsTo
     {
         return $this->belongsTo(ServiceLabor::class);
     }
-
-/*    public function ServiceLabor(): HasMany
-    {
-        return $this->hasMany(ServiceLabor::class);
-    }*/
 }

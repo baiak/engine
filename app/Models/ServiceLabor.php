@@ -12,7 +12,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\DB;
 
 
-class ServiceLabor extends Pivot
+class ServiceLabor extends Model
 
 {
     protected static function booted()

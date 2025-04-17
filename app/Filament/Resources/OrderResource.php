@@ -125,6 +125,7 @@ class OrderResource extends Resource
                             ->hidden(fn(string $operation): bool => $operation === 'edit'),
 
                         Forms\Components\TextInput::make('order_number')
+                            ->extraInputAttributes(['style' => 'color: #778899'])
                             ->columnSpan(['sm'=> 1])
                             ->label('Número da ordem')
                             ->required()
