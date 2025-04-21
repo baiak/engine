@@ -7,6 +7,7 @@ use App\Enums\TypeOfServiceStatus;
 use App\Models\Department;
 use App\Models\Order;
 use App\Models\Service;
+use App\Models\ServiceLabor;
 use Filament\Actions\Action;
 use Mokhosh\FilamentKanban\Pages\KanbanBoard;
 
@@ -231,5 +232,26 @@ use Mokhosh\FilamentKanban\Pages\KanbanBoard;
     protected static string $scriptsView = 'service-kanban.kanban-scripts';
 
     public bool $disableEditModal = true;
+
+    protected $listeners = [
+        'laborStatusUpdated' => 'refreshRecord'
+    ];
+
+    #[On('laborStatusUpdated')]
+    public function refreshRecord($recordId)
+    {
+        // Em vez de recarregar todo o card, apenas atualizar o modelo
+        $record = ServiceLabor::find($recordId);
+
+        // Não recarregue o componente inteiro
+        // NÃO faça $this->dispatch('refreshKanban');
+
+        // Você pode atualizar uma propriedade específica se necessário
+        // $this->records = YourRecordModel::all(); // Só se necessário
+
+        // Ou emitir um evento específico para o cliente
+        $this->dispatch('recordUpdated', recordId: $recordId);
+    }
+
 
 }

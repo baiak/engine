@@ -30,3 +30,60 @@
 .hide-column {
     display: none;
 }
+/* Adicione este CSS ao seu arquivo de estilos */
+.labor-status-dropdown {
+    position: relative;
+}
+
+.labor-status-current {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s;
+}
+
+.labor-status-current:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.labor-status-options {
+    position: absolute;
+    z-index: 50;
+    background-color: white;
+    border-radius: 0.375rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    margin-top: 0.25rem;
+    width: max-content;
+    max-height: 15rem;
+    overflow-y: auto;
+}
+
+.labor-status-option {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.labor-status-option:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.loading-indicator {
+    display: inline-flex;
+    align-items: center;
+}
+
+.loading-spinner {
+    animation: spin 1s linear infinite;
+    margin-right: 0.5rem;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}

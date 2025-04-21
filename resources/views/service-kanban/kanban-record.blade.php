@@ -79,17 +79,23 @@
                         background-color: #ffffff;
                         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
                     ">
+
                         @foreach($record->labor as $getLabors)
                             <li style="
                                 padding: 8px 12px;
                                 border-bottom: 1px solid #e0e0e0;
                                 color: #555;
                                 font-size: 12px;
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: center;
                             ">
                                 <strong>{{ $this->laborTitle = app('laborTitle')($getLabors->pivot->labor_id) }}</strong> -
-                                <span style="color: {{$getLabors->pivot->status === 'concluído' ? '#4caf50' : '#f44336'}};">
-                                    {{$getLabors->pivot->status}}
-                                </span>
+                                @livewire('kanban.labor-status-manager', [
+                                'laborPivotId' => $getLabors->pivot->id,
+                                'status' => $getLabors->pivot->status,
+                                'recordId' => $record->getKey()
+                                ], key('labor-status-'.$getLabors->pivot->id))
                             </li>
                         @endforeach
                     </ul>
