@@ -4,68 +4,114 @@ namespace App\Livewire\Kanban;
 
 use Livewire\Component;
 use App\Enums\TypeOfLaborStatus;
-use App\Models\ServiceLabor; // Substitua pelo nome correto do seu modelo
+use App\Models\ServiceLabor;
 
 class LaborStatusManager extends Component
 {
     public $laborPivotId;
     public $status;
     public $recordId;
-    public $showDropdown = false;
-    public $loading = false;
+
+    // Necessário para ajudar no rehydrate
+    public $statusOptions;
+    public $currentStatusValue;
 
     public function mount($laborPivotId, $status, $recordId)
     {
         $this->laborPivotId = $laborPivotId;
         $this->status = $status;
         $this->recordId = $recordId;
+        $this->currentStatusValue = $status;
+
+        // Inicializar as opções de status para o Alpine.js
+        $this->prepareStatusOptions();
     }
 
-    public function toggleDropdown()
+    public function prepareStatusOptions()
     {
-        $this->showDropdown = !$this->showDropdown;
-    }
-
-    public function closeDropdown()
-    {
-        $this->showDropdown = false;
+        $options = TypeOfLaborStatus::cases();
+        $this->statusOptions = array_map(function($option) {
+            return [
+                'value' => $option->value,
+                'label' => $option->getLabel(),
+                'style' => $option->getStyle(),
+                'icon' => method_exists($option, 'getIcon') ? $option->getIcon() : '',
+                'color' => method_exists($option, 'getColor') ? $option->getColor() : ''
+            ];
+        }, $options);
     }
 
     public function updateStatus($newStatus)
     {
-        $this->closeDropdown();
-        $this->loading = true;
-
         try {
-            // Atualiza no banco de dados
             $model = ServiceLabor::find($this->laborPivotId);
-            $model->status = $newStatus;
-            $model->save();
+            if ($model) {
+                $model->status = $newStatus;
+                $model->save();
 
-            // Atualiza localmente
-            $this->status = $newStatus;
+                $this->status = $newStatus;
+                $this->currentStatusValue = $newStatus;
+
+                $this->dispatch('status-updated', [
+                    'laborPivotId' => $this->laborPivotId,
+                    'newStatus' => $newStatus,
+                    'recordId' => $this->recordId
+                ]);
+
+                return ['success' => true];
+            }
+
+            return ['success' => false, 'message' => 'Registro não encontrado'];
         } catch (\Exception $e) {
-            // Log do erro
+            return ['success' => false, 'message' => $e->getMessage()];
         }
-
-        $this->loading = false;
     }
+
 
     public function render()
     {
         $statusOptions = TypeOfLaborStatus::cases();
 
-        $currentStatus = null;
+        // Preparar currentStatus como array associativo
+        $currentStatus = [];
         foreach ($statusOptions as $option) {
             if ($option->value === $this->status) {
-                $currentStatus = $option;
+                $currentStatus = [
+                    'value' => $option->value,
+                    'label' => $option->getLabel(),
+                    'style' => $option->getStyle(),
+                    'icon' => method_exists($option, 'getIcon') ? $option->getIcon() : '',
+                    'color' => method_exists($option, 'getColor') ? $option->getColor() : ''
+                ];
                 break;
             }
         }
 
+        // Preparar options como array de arrays associativos
+        $optionsArray = array_map(function($option) {
+            return [
+                'value' => $option->value,
+                'label' => $option->getLabel(),
+                'style' => $option->getStyle(),
+                'icon' => method_exists($option, 'getIcon') ? $option->getIcon() : '',
+                'color' => method_exists($option, 'getColor') ? $option->getColor() : ''
+            ];
+        }, $statusOptions);
+
         return view('livewire.kanban.labor-status-manager', [
-            'statusOptions' => $statusOptions,
-            'currentStatus' => $currentStatus,
+            'statusOptions' => $this->statusOptions,
+            'currentStatus' => collect($this->statusOptions)
+                ->firstWhere('value', $this->status),
+            'status' => $this->status,
+            'laborPivotId' => $this->laborPivotId
         ]);
+    }
+
+    public function dehydrate()
+    {
+        $this->dispatch('reinitializeAlpine', [
+            'laborPivotId' => $this->laborPivotId,
+            'status' => $this->status
+        ])->to('livewire.kanban.labor-status-manager');
     }
 }
