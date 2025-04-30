@@ -13,7 +13,9 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\Layout\Split;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -55,18 +57,40 @@ class DepartmentResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+        
             ->columns([
                 TextColumn::make('title')
+                    ->label('Departamento')
+                    ->searchable()
+                    ->sortable()
+                    ->weight(FontWeight::Bold),
+                
+                TextColumn::make('responsible_user.name')
+                    ->label('Responsável')
                     ->searchable()
                     ->sortable(),
-                    
-                TextColumn::make('users_count')
-                    ->counts('users')
-                    ->label('Total Usuários'),
-                    
-                TextColumn::make('responsible_user.name')
-                    ->label('Responsável'),
+                
+                Split::make([
+                    ImageColumn::make('users.profileImg')
+                        ->label('Avatar do Responsável')
+                        ->circular(),
+                        
+                        
+                    TextColumn::make('responsible_user.email')
+                        ->label('Email do Responsável'),
+                ]),
+                
+                TextColumn::make('users.name')
+                    ->label('Usuários')
+                    ->searchable()
+                    ->description(fn ($record) => 'Total: ' . $record->users->count() . ' usuário(s)')
+                    ->wrap(),
             ])
+            ->contentGrid([
+                'md' => 2,
+                'xl' => 3,
+            ])
+            
             ->filters([
                 Tables\Filters\SelectFilter::make('has_responsible')
                     ->label('Tem responsável')

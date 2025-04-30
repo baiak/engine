@@ -26,9 +26,29 @@ class UsersRelationManager extends RelationManager
                 Toggle::make('is_responsible')
                     ->label('É responsável pelo departamento')
                     ->default(false)
+                    ->visible(fn (callable $get) => $get('is_active') ?? true)
                     ->afterStateUpdated(function ($state, $set, $record) {
                         if ($state && $record) {
-                            $this->getOwnerRecord()->users()->update(['pivot_is_responsible' => false]);
+                            // Get all user IDs explicitly from the relationship
+                            $userIds = $this->getOwnerRecord()
+                                ->users()
+                                ->select('users.id')
+                                ->pluck('users.id')
+                                ->toArray();
+                                
+                            // Update all existing users to not be responsible
+                            foreach ($userIds as $userId) {
+                                $this->getOwnerRecord()->users()->updateExistingPivot(
+                                    $userId,
+                                    ['is_responsible' => false]
+                                );
+                            }
+                            
+                            // Then update the current record
+                            $this->getOwnerRecord()->users()->updateExistingPivot(
+                                $record->id,
+                                ['is_responsible' => true]
+                            );
                         }
                     }),
                     
@@ -39,6 +59,7 @@ class UsersRelationManager extends RelationManager
                     ->afterStateUpdated(function ($state, callable $set) {
                         if (!$state) {
                             $set('dismissal_date', Carbon::now());
+                            $set('is_responsible', false); // Automatically set is_responsible to false when inactive
                         } else {
                             $set('dismissal_date', null);
                         }
@@ -53,7 +74,6 @@ class UsersRelationManager extends RelationManager
                 DateTimePicker::make('dismissal_date')
                     ->label('Data de demissão')
                     ->visible(fn (callable $get) => !$get('is_active'))
-                        
                     ->default(null)
                     ->minDate(function (callable $get) {
                         $admissionDate = $get('admission_date');
@@ -74,44 +94,73 @@ class UsersRelationManager extends RelationManager
                     ->description(fn ($record): string => $record->email)
                     ->searchable(),
                     
-                Tables\Columns\ToggleColumn::make('is_responsible')
+                Tables\Columns\IconColumn::make('pivot.is_responsible')
                     ->label('Responsável')
-                    ->updateStateUsing(function ($record, $state) {
-                        if ($state) {
-                            // Remover a responsabilidade de outros usuários
-                            $this->getOwnerRecord()->users()->update(['pivot_is_responsible' => false]);
-                        }
-                        
-                        // Atualizar o estado deste usuário
-                        $this->getOwnerRecord()->users()->updateExistingPivot($record->id, [
-                            'is_responsible' => $state,
-                        ]);
-                    }),
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-x-circle'),
                     
-                Tables\Columns\ToggleColumn::make('is_active')
+                Tables\Columns\IconColumn::make('pivot.is_active')
                     ->label('Ativo')
-                    ->updateStateUsing(function ($record, $state) {
-                        $data = ['is_active' => $state];
-                        
-                        if (!$state) {
-                            $data['dismissal_date'] = now();
-                        } else {
-                            $data['dismissal_date'] = null;
-                        }
-                        
-                        $this->getOwnerRecord()->users()->updateExistingPivot($record->id, $data);
-                    }),
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-x-circle'),
                     
-                Tables\Columns\TextColumn::make('admission_date')
+                Tables\Columns\TextColumn::make('pivot.admission_date')
                     ->label('Admissão')
                     ->date('d/m/Y')
                     ->sortable(),
                     
-                Tables\Columns\TextColumn::make('dismissal_date')
+                Tables\Columns\TextColumn::make('pivot.dismissal_date')
                     ->label('Demissão')
                     ->date('d/m/Y')
                     ->placeholder('--')
                     ->sortable(),
+                
+                // Adicionar uma coluna de ações para gerenciar o status de responsável
+                Tables\Columns\TextColumn::make('actions')
+                    ->label('Gerenciar')
+                    ->formatStateUsing(function ($record) {
+                        // Não exibir se não estiver ativo
+                        if (!isset($record->pivot) || !$record->pivot->is_active) {
+                            return '';
+                        }
+                        
+                        return $record->pivot->is_responsible ? 'Remover responsabilidade' : 'Tornar responsável';
+                    })
+                    ->action(function ($record) {
+                        // Não fazer nada se não estiver ativo
+                        if (!isset($record->pivot) || !$record->pivot->is_active) {
+                            return;
+                        }
+                        
+                        // Se for responsável, remove; se não for, torna responsável
+                        $newState = !$record->pivot->is_responsible;
+                        
+                        if ($newState) {
+                            // Get all user IDs explicitly from the relationship
+                            $userIds = $this->getOwnerRecord()
+                                ->users()
+                                ->select('users.id')
+                                ->pluck('users.id')
+                                ->toArray();
+                                
+                            // Update all existing users to not be responsible
+                            foreach ($userIds as $userId) {
+                                $this->getOwnerRecord()->users()->updateExistingPivot(
+                                    $userId,
+                                    ['is_responsible' => false]
+                                );
+                            }
+                        }
+                        
+                        // Update the current record
+                        $this->getOwnerRecord()->users()->updateExistingPivot(
+                            $record->id,
+                            ['is_responsible' => $newState]
+                        );
+                    })
+                    ->hidden(fn ($record) => !isset($record->pivot) || !$record->pivot->is_active),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('is_active')
@@ -119,7 +168,13 @@ class UsersRelationManager extends RelationManager
                     ->options([
                         '1' => 'Ativos',
                         '0' => 'Inativos',
-                    ]),
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        if (isset($data['value'])) {
+                            return $query->wherePivot('is_active', $data['value']);
+                        }
+                        return $query;
+                    }),
             ])
             ->headerActions([
                 Tables\Actions\AttachAction::make()
@@ -128,7 +183,12 @@ class UsersRelationManager extends RelationManager
                         $action->getRecordSelect(),
                         Toggle::make('is_responsible')
                             ->label('É responsável pelo departamento')
-                            ->default(false),
+                            ->default(false)
+                            ->visible(fn (callable $get) => $get('is_active') ?? true),
+                        Toggle::make('is_active')
+                            ->label('Ativo no departamento')
+                            ->default(true)
+                            ->reactive(),
                         DateTimePicker::make('admission_date')
                             ->label('Data de admissão')
                             ->default(now())
@@ -139,9 +199,59 @@ class UsersRelationManager extends RelationManager
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DetachAction::make()
                     ->before(function ($record) {
-                        if ($record->pivot->is_responsible) {
-                            $this->getOwnerRecord()->users()->update(['pivot_is_responsible' => false]);
+                        if ($record && isset($record->pivot) && $record->pivot->is_responsible) {
+                            // Get user IDs explicitly to avoid column ambiguity
+                            $userIds = $this->getOwnerRecord()
+                                ->users()
+                                ->select('users.id')
+                                ->pluck('users.id')
+                                ->toArray();
+                                
+                            // Update each user individually
+                            foreach ($userIds as $userId) {
+                                if ($userId != $record->id) { // Skip the current record as it will be detached
+                                    $this->getOwnerRecord()->users()->updateExistingPivot(
+                                        $userId,
+                                        ['is_responsible' => false]
+                                    );
+                                }
+                            }
                         }
+                    }),
+                // Nova ação para alternar o status de responsável
+                Tables\Actions\Action::make('toggleResponsible')
+                    ->label(fn ($record) => $record && isset($record->pivot) && $record->pivot->is_responsible ? 
+                        'Remover responsabilidade' : 'Tornar responsável')
+                    ->icon(fn ($record) => $record && isset($record->pivot) && $record->pivot->is_responsible ? 
+                        'heroicon-o-x-mark' : 'heroicon-o-check')
+                    ->color(fn ($record) => $record && isset($record->pivot) && $record->pivot->is_responsible ? 
+                        'danger' : 'success')
+                    ->hidden(fn ($record) => !($record && isset($record->pivot) && $record->pivot->is_active))
+                    ->action(function ($record) {
+                        $newState = !$record->pivot->is_responsible;
+                        
+                        if ($newState) {
+                            // Get all user IDs explicitly from the relationship
+                            $userIds = $this->getOwnerRecord()
+                                ->users()
+                                ->select('users.id')
+                                ->pluck('users.id')
+                                ->toArray();
+                                
+                            // Update all existing users to not be responsible
+                            foreach ($userIds as $userId) {
+                                $this->getOwnerRecord()->users()->updateExistingPivot(
+                                    $userId,
+                                    ['is_responsible' => false]
+                                );
+                            }
+                        }
+                        
+                        // Update the current record
+                        $this->getOwnerRecord()->users()->updateExistingPivot(
+                            $record->id,
+                            ['is_responsible' => $newState]
+                        );
                     }),
             ])
             ->bulkActions([
@@ -166,6 +276,7 @@ class UsersRelationManager extends RelationManager
                                 $this->getOwnerRecord()->users()->updateExistingPivot($recordId, [
                                     'is_active' => false,
                                     'dismissal_date' => now(),
+                                    'is_responsible' => false, // Automatically set is_responsible to false when inactive
                                 ]);
                             }
                         })

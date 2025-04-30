@@ -395,7 +395,7 @@ use app\livewire\LaborImpedimentForm;
                     ->default(function (RelationManager $livewire) {
                         return ($livewire->getOwnerRecord()->order_number);
                     }),
-                Forms\Components\TextInput::make('order_id')
+                Forms\Components\Hidden::make('order_id')
                     ->default(function (RelationManager $livewire) {
                         return ($livewire->getOwnerRecord()->id);
                     })
@@ -479,7 +479,7 @@ use app\livewire\LaborImpedimentForm;
                             ->visible(fn($record) => $record !== null),
                     ]),
 
-                Select::make('department_id')
+                    Select::make('department_id')
                     ->label('Departamento')
                     ->options(function (callable $get) {
                         $partId = $get('part_id');
@@ -491,8 +491,47 @@ use app\livewire\LaborImpedimentForm;
                     })
                     ->searchable()
                     ->required()
+                    ->reactive()
+                    ->live()
+                    ->afterStateUpdated(fn (Forms\Set $set) => $set('user_id', null))
                     ->placeholder('Selecione um departamento')
                     ->hidden(fn(string $operation): bool => $operation === 'edit'),
+                
+                Select::make('user_id')
+                    ->label('Responsável')
+                    ->options(function (callable $get) {
+                        $departmentId = $get('department_id');
+                        
+                        if (!$departmentId) {
+                            return [];
+                        }
+                
+                        return \App\Models\User::whereHas('departments', function($query) use ($departmentId) {
+                            $query->where('department_id', $departmentId)
+                                  ->where('is_active', true);
+                        })->pluck('name', 'id');
+                    })
+                    ->searchable()
+                    ->reactive()
+                    ->live()
+                    ->placeholder('Selecione o responsável')
+                    ->hidden(fn(string $operation): bool => $operation === 'edit')
+                    ->required()
+                    ->disabled(fn(callable $get): bool => empty($get('department_id'))),
+                
+                // Para exibir informações em modo de visualização/edição (readonly)
+                Section::make('Dados do serviço')
+                    ->visible(fn($record) => $record !== null)
+                    ->schema([
+                        Placeholder::make('Peça')
+                            ->content(fn($record) => $record ? $record->part->title : null),
+                            
+                        Placeholder::make('Departamento')
+                            ->content(fn($record) => $record ? $record->department->title : null),
+                            
+                        Placeholder::make('Responsável')
+                            ->content(fn($record) => $record ? $record->user->name : null),
+                    ]),
 
                 Radio::make('status')
                     ->required()
@@ -530,7 +569,7 @@ use app\livewire\LaborImpedimentForm;
                         ->weight('bold')
                         ->label('Responsável')
                         ->getStateUsing(function ($record) {
-                            return ($record->department->user->name);
+                            return $record->department->users->pluck('name')->first();                        
                         }),
 
                     Tables\Columns\TextColumn::make('deadline')

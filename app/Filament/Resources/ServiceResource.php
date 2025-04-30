@@ -41,16 +41,14 @@ class ServiceResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-
     public static function form(Form $form): Form
     {
         return $form
-            ->schema(components: [
+            ->schema([
                 Section::make()
                     ->columns([
                         'sm' => 1,
                         'xl' => 4,
-
                     ])
                     ->schema([
                         Forms\Components\Section::make([
@@ -63,49 +61,37 @@ class ServiceResource extends Resource
                                 ->placeholder('Selecione uma ordem')
                                 ->afterStateUpdated(function ($set, $state) {
                                     if ($state) {
-                                        // Obtém o veículo associado à ordem
                                         $vehicleIdFromOrderTable = Order::where('id', $state)->value('vehicle_id');
                                         $vehicle = Vehicle::find($vehicleIdFromOrderTable);
 
-                                        // Obtém o cliente associado à ordem
                                         $clientIdFromOrderTable = Order::where('id', $state)->value('client_id');
                                         $client = Client::find($clientIdFromOrderTable);
 
                                         if ($vehicle) {
-                                            // Define o campo veículo com os dados do veículo
                                             $set('vehicle', $vehicle->factory . '/' . $vehicle->model . '/' . $vehicle->motor);
                                         }
 
                                         if ($client) {
-                                            // Define o campo cliente com o nome do cliente
                                             $set('client', $client->name);
                                         }
                                     } else {
-                                        // Caso o estado seja resetado ou inválido
                                         $set('vehicle', null);
                                         $set('client', null);
                                     }
                                 })
                                 ->hidden(fn(string $operation): bool => $operation === 'edit')
-                                //este campo nao pode ser editado, pois a ordem, serviço, peças e mao de obra estao diretamente e indiretamente relacionados
                                 ->required(),
 
                             Select::make('part_id')
                                 ->label('Peça')
-                                //->options(Part::orderBy('title')->pluck('title', 'id'))
                                 ->options(function (callable $get, $state) {
-                                    // Obtém o ID do pedido selecionado
                                     $orderId = $get('order_id');
-
-                                    // Busca o veículo associado ao pedido
                                     $vehicleIdFromOrder = Order::where('id', $orderId)->value('vehicle_id');
 
-                                    // Se o pedido e o veículo relacionados forem válidos, retorna as peças associadas ao veículo
                                     if ($orderId && $vehicleIdFromOrder) {
                                         return Part::where('vehicle_id', $vehicleIdFromOrder)->pluck('title', 'id');
                                     }
 
-                                    // Se houver um estado (part_id) e a peça for encontrada, retorna a peça
                                     if ($state) {
                                         $part = Part::find($state);
                                         if ($part) {
@@ -113,16 +99,12 @@ class ServiceResource extends Resource
                                         }
                                     }
 
-                                    // Caso contrário, retorna todas as peças ordenadas por título
                                     return Part::orderBy('title')->pluck('title', 'id');
                                 })
                                 ->searchable()
                                 ->placeholder('Selecione uma peça')
                                 ->reactive()
                                 ->hidden(fn(string $operation): bool => $operation === 'edit')
-                                //este campo nao pode ser editado, pois possui relacionamento com outros itens,
-                                // se precisar alterar, é preciso deletar o serviço, para que o departamento responsavel seja notificado novamente
-
                                 ->required(),
 
                             Select::make('department_id')
@@ -139,10 +121,37 @@ class ServiceResource extends Resource
                                 ->reactive()
                                 ->placeholder('Selecione o departamento')
                                 ->hidden(fn(string $operation): bool => $operation === 'edit')
-                                //este campo nao pode ser editado, pois no momento do cadastro, o departamento foi notificado
-                                //se for preciso alterar, é necessário deletar o serviço, para que o outro departamento seja notificado
-                                //e o serviço nao fique órfao pendente no dashboard do departamento escolhido anteriormente
-                                ->required(),
+                                ->required()
+                                ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                    $set('user_id', null); // Limpa o usuário selecionado quando o departamento muda
+                                }),
+                                Select::make('user_id')
+                                ->label('Responsável')
+                                ->options(function (callable $get) {
+                                    try {
+                                        $departmentId = $get('department_id');
+                                        
+                                        if (!$departmentId) {
+                                            return [];
+                                        }
+                            
+                                        $users = \App\Models\Department::find($departmentId)
+                                            ->users()
+                                            ->wherePivot('is_active', true)
+                                            ->pluck('name', 'id');
+                                        
+                                        return $users;
+                                    } catch (\Exception $e) {
+                                        return [];
+                                    }
+                                })
+                                ->searchable()
+                                ->reactive()
+                                ->live()
+                                ->placeholder('Selecione o responsável')
+                                ->hidden(fn(string $operation): bool => $operation === 'edit')
+                                ->required()
+                                ->disabled(fn(callable $get): bool => empty($get('department_id'))),
 
                             Forms\Components\DatePicker::make('deadline')
                                 ->required(),
@@ -155,7 +164,6 @@ class ServiceResource extends Resource
                                 'sm' => 2,
                             ]),
 
-
                         Forms\Components\Section::make([
                             Grid::make([
                                 'default' => 1,
@@ -165,7 +173,6 @@ class ServiceResource extends Resource
                                         ->label('Número da ordem')
                                         ->live()
                                         ->content(function ($record) {
-                                            //$hasOrder = $record->order->order_number;
                                             if ($record) {
                                                 return $record->order->order_number;
                                             }
@@ -214,28 +221,23 @@ class ServiceResource extends Resource
                                             return null;
                                         }),
 
-                                    Forms\Components\Placeholder::make('department_id')
+                                    Forms\Components\Placeholder::make('user_id')
                                         ->label('Responsável:')
                                         ->live()
                                         ->content(function ($record) {
-                                            if ($record) {
-                                                return ($record->department->user->name);
+                                            if ($record && $record->user) {
+                                                return $record->user->name;
                                             }
                                             return null;
-                                        })
+                                        }),
                                 ]),
-
                         ])->grow(false)
                             ->columnSpan([
                                 'sm' => 2,
                             ]),
                     ])
-
             ]);
-
     }
-
-
 
     public static function table(Table $table): Table
     {
@@ -250,7 +252,6 @@ class ServiceResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('order.order_number')
-                    //->tooltip(fn($record)=> )
                     ->searchable()
                     ->tooltip(function ($record) {
                         return ('Cliente:' . $record->order->client->name .
@@ -262,8 +263,6 @@ class ServiceResource extends Resource
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('part.title')
-                    ->description(fn($record) => 'Responsável: ' . $record->department->user->name)
-                    ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('deadline')
                     ->date()
@@ -274,8 +273,9 @@ class ServiceResource extends Resource
                 Tables\Columns\TextColumn::make('description')
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->searchable(),
-
-
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Responsável')
+                    ->sortable(),
             ])
             ->filters([
                 //
@@ -289,7 +289,6 @@ class ServiceResource extends Resource
                 ]),
             ]);
     }
-
 
     public static function getRelations(): array
     {

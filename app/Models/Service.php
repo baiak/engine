@@ -30,6 +30,10 @@ class Service extends Model implements Sortable
             'description',
             'order_number',
         ];
+    public function user()
+    {
+    return $this->belongsTo(\App\Models\User::class);
+}
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
