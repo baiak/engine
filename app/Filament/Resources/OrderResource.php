@@ -77,7 +77,7 @@ class OrderResource extends Resource
                     ->schema([
                         Forms\Components\Hidden::make('user_id')
                             ->required()
-                            ->default(auth()->id()),
+                            ->default(Auth::user()?->id),
                            // ->hidden(fn(string $operation): bool => $operation === 'edit'),
 
 
@@ -108,7 +108,7 @@ class OrderResource extends Resource
                                 array_unique(
                                     Vehicle::query()
                                         ->select([DB::raw("CONCAT(factory, '/', model, '/', motor) as vehicle"), 'id',])
-                                        ->pluck('vehicle', 'id')
+->pluck('vehicle', 'id')
                                         ->toArray()
                                 )
                             ])
@@ -133,7 +133,7 @@ class OrderResource extends Resource
                             //->hidden(fn(string $operation): bool => $operation === 'edit'),
 
 
-                        Forms\Components\DateTimePicker::make('deadline')
+                        Forms\Components\DatePicker::make('deadline')
                             ->seconds(false)
                             ->columnSpan(['sm' => 1])
                             ->required(),

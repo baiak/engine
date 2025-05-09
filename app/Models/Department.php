@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
+use Illuminate\Database\Eloquent\Relations\HasOne;
+
 class Department extends Model
 {
     use HasFactory;
@@ -14,10 +16,17 @@ class Department extends Model
         'title'
     ];
 
+    public function service(): HasOne
+    {
+        return $this->hasOne(Service::class);
+
+    }
+
+
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class)
-            ->withPivot('is_responsible', 'is_active', 'admission_date', 'dismissal_date')
+            ->withPivot('is_responsible', 'user_id', 'is_active', 'admission_date', 'dismissal_date')
             ->withTimestamps();
     }
 
@@ -32,6 +41,8 @@ class Department extends Model
             ->wherePivot('is_responsible', true)
             ->first();
     }
+
+
     protected $casts = [
         'dismissal_date' => 'datetime',
     ];

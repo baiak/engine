@@ -26,7 +26,7 @@ class ServiceObserver
         ]);
         //notificacao
         //$userData = $service->department->user;
-        $userData =  User::findOrFail($service->department->user->id);
+        $userData =  User::findOrFail($service->user);
         $userAuth = User::findOrFail(Auth::id());
         // Log::info('USERDATA -'.$userData);
         //envia a notificacao para o usuario selecionado do departamento no form

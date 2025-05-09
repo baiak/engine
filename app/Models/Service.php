@@ -29,6 +29,7 @@ class Service extends Model implements Sortable
             'status',
             'description',
             'order_number',
+            'user_id',
         ];
     public function user()
     {

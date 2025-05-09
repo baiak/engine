@@ -24,6 +24,7 @@ use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -56,7 +57,7 @@ use Illuminate\Support\Facades\Log;
 use Filament\Pages\Actions;
 use Illuminate\Validation\Rules\Enum;
 use Illuminate\Database\Eloquent\Collection;
-use app\livewire\LaborImpedimentForm;
+use App\livewire\LaborImpedimentForm;
 
 
 #[AllowDynamicProperties] class ServiceRelationManager extends RelationManager
@@ -99,7 +100,7 @@ use app\livewire\LaborImpedimentForm;
 
     public function __construct()
     {
-        //Log::info("ServiceRelationManager carregado."); // Log para confirmar carregamento
+        Log::info("ServiceRelationManager carregado."); // Log para confirmar carregamento
     }
     public function getServiceLaborLogs($serviceLaborId)
     {
@@ -129,7 +130,7 @@ use app\livewire\LaborImpedimentForm;
 
                             $newValues['user_avatar'] = app('userAvatar')($log->user_id);
                             $oldValues['user_avatar'] = app('userAvatar')($log->user_id);
-                        //Log::alert("log user_id: {$log->user_id}");
+                        Log::alert("log user_id: {$log->user_id}");
 
                     }
 
@@ -159,14 +160,14 @@ use app\livewire\LaborImpedimentForm;
     public function setRecordId($id)
     {
         $this->recordId = $id;
-        // Log::info("setRecordId chamado com ID: " . $id); // Verificar se `setRecordId` é acionado
+         Log::info("setRecordId chamado com ID: " . $id); // Verificar se `setRecordId` é acionado
         $this->loadData();
     }
 
 
     public function loadData()
     {
-        // Log::info("loadData iniciado."); // Log no início do método
+         Log::info("loadData iniciado."); // Log no início do método
 
         if ($this->recordId) {
             $labor = Labor::find($this->recordId);
@@ -391,10 +392,14 @@ use app\livewire\LaborImpedimentForm;
     {
         return $form
             ->schema([
+                Grid::make(1)
+            ->schema([                              
+            
                 Forms\Components\TextInput::make('order_number')
                     ->default(function (RelationManager $livewire) {
                         return ($livewire->getOwnerRecord()->order_number);
-                    }),
+                    })
+                    ,
                 Forms\Components\Hidden::make('order_id')
                     ->default(function (RelationManager $livewire) {
                         return ($livewire->getOwnerRecord()->id);
@@ -407,10 +412,10 @@ use app\livewire\LaborImpedimentForm;
                     ->label('Peça')
                     ->reactive()
                     ->options(function (callable $get, $state) {
-                        // Obtém o ID do pedido selecionado
+                        // Obtém o ID da ordem
                         $orderId = $get('order_id');
 
-                        // Busca o veículo associado ao pedido
+                        // Busca o veículo associado a ordem
                         $vehicleIdFromOrder = Order::where('id', $orderId)->value('vehicle_id');
 
                         // Se o pedido e o veículo relacionados forem válidos, retorna as peças associadas ao veículo
@@ -441,12 +446,6 @@ use app\livewire\LaborImpedimentForm;
                                 );
                             }),
 
-                        Select::make('department_id')
-                            ->label('Departamento responsável')
-                            ->options(Department::orderBy('title')->pluck('title', 'id'))
-                            ->searchable()
-                            ->placeholder('Selecione um departamento'),
-
                         Forms\Components\Hidden::make('vehicle_id')
                             ->label('Veículo')
                             ->default(function (RelationManager $livewire) {
@@ -454,9 +453,12 @@ use app\livewire\LaborImpedimentForm;
                             }),
 
                         Forms\Components\TextInput::make('title')
+                            ->label('Nome da peça')
                             ->required()
                             ->maxLength(255),
                         Forms\Components\RichEditor::make('parameters')
+                            ->label('Parâmetros')
+                            ->maxLength(255),
 
                     ])
                     ->createOptionUsing(function ($data): void {
@@ -466,18 +468,7 @@ use app\livewire\LaborImpedimentForm;
                     ->hidden(fn(string $operation): bool => $operation === 'edit')
                     ->required(),
 
-                //placeholders exibidos apenas no modal de edição
-                Section::make('Dados do serviço')
-                    ->visible(fn($record) => $record !== null)
-                    ->schema([
-                        Placeholder::make('Peça')
-                            ->content(fn($record) => $record ? $record->part->title : null)
-                            ->visible(fn($record) => $record !== null),
 
-                        Placeholder::make('Responsável  / Departamento')
-                            ->content(fn($record) => $record ? $record->department->user->name . ' / ' . $record->department->title : null)
-                            ->visible(fn($record) => $record !== null),
-                    ]),
 
                     Select::make('department_id')
                     ->label('Departamento')
@@ -497,7 +488,7 @@ use app\livewire\LaborImpedimentForm;
                     ->placeholder('Selecione um departamento')
                     ->hidden(fn(string $operation): bool => $operation === 'edit'),
                 
-                Select::make('user_id')
+                    Select::make('user_id')
                     ->label('Responsável')
                     ->options(function (callable $get) {
                         $departmentId = $get('department_id');
@@ -506,9 +497,10 @@ use app\livewire\LaborImpedimentForm;
                             return [];
                         }
                 
+                        // Get users who belong to the selected department and are active
                         return \App\Models\User::whereHas('departments', function($query) use ($departmentId) {
-                            $query->where('department_id', $departmentId)
-                                  ->where('is_active', true);
+                            $query->where('departments.id', $departmentId)
+                                  ->where('department_user.is_active', true);
                         })->pluck('name', 'id');
                     })
                     ->searchable()
@@ -529,21 +521,31 @@ use app\livewire\LaborImpedimentForm;
                         Placeholder::make('Departamento')
                             ->content(fn($record) => $record ? $record->department->title : null),
                             
-                        Placeholder::make('Responsável')
-                            ->content(fn($record) => $record ? $record->user->name : null),
+                
                     ]),
 
                 Radio::make('status')
                     ->required()
-                    ->options(TypeOfServiceStatus::class),
+                    ->options(TypeOfServiceStatus::class),                    
+                    
+                Forms\Components\Hidden::make('deadlineHidden')
+                    ->default(function (RelationManager $livewire) {
+                        return ($livewire->getOwnerRecord()->deadline);
+                    }),
 
                 Forms\Components\DatePicker::make('deadline')
-                    ->required(),
+                    ->required()
+                    ->minDate(now())// Data mínima = dia atual
+                    ->maxDate(function (Forms\Get $get) {
+                        return $get('deadlineHidden'); // Usa o valor do campo hidden como data máxima
+                    }),
+
 
                 Forms\Components\RichEditor::make('description')
                     ->required()
                     ->maxLength(255),
-            ]);
+            ]) 
+        ]);
     }
 
     public function table(Table $table): Table
@@ -564,13 +566,20 @@ use app\livewire\LaborImpedimentForm;
                     Tables\Columns\TextColumn::make('status')
                         ->label('Status'),
 
+                    Tables\Columns\TextColumn::make('Departamento: ')
+                        ->formatStateUsing(fn(Column $column, $state): string => $column->getLabel() . ': ' . $state)
+                        ->weight('bold')
+                        ->label('Departamento')
+                        ->getStateUsing(function ($record) {
+                            return $record->department_id ? Department::where('id', $record->department_id)->first()->title : 'Não atribuído';                                              
+                        }),
                     Tables\Columns\TextColumn::make('Responsável: ')
                         ->formatStateUsing(fn(Column $column, $state): string => $column->getLabel() . ': ' . $state)
                         ->weight('bold')
                         ->label('Responsável')
                         ->getStateUsing(function ($record) {
-                            return $record->department->users->pluck('name')->first();                        
-                        }),
+                            return $record->user_id ? User::where('id', $record->user_id)->first()->name : 'Não atribuído';                        
+                        }),        
 
                     Tables\Columns\TextColumn::make('deadline')
                         ->formatStateUsing(fn(string $state) => 'Prazo: ' . Carbon::parse($state)->format('d/m/y')),
@@ -588,12 +597,13 @@ use app\livewire\LaborImpedimentForm;
             ])
             ->contentGrid(['sm' => 2])
                             ->filters([
-                                //
+                                
                             ])
                             ->headerActions([
                                 Tables\Actions\CreateAction::make()
-                                    ->label('Adicionar peça/serviço'),
-                                //notificacao ao criar o servico
+                                    ->label('Adicionar peça/serviço')                                    
+                                    ->modalHeading('Adicionar peça/serviço')
+                                    ->modalWidth('md'),
 
                             ])
                             ->actions([

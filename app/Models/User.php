@@ -38,7 +38,7 @@ class User extends Authenticatable
     public function departments(): BelongsToMany
     {
         return $this->belongsToMany(Department::class)
-            ->withPivot('is_responsible', 'is_active', 'admission_date', 'dismissal_date')
+            ->withPivot('is_responsible', 'user_id', 'is_active', 'admission_date', 'dismissal_date')
             ->withTimestamps();
     }
 

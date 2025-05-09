@@ -43,4 +43,12 @@
             onAdd,
         }))
     })
+    document.addEventListener('laborStatusUpdated', event => {
+            const { laborPivotId, status } = event.detail
+            // You can add any global handlers here
+            console.log(`Labor status updated: ${laborPivotId} to ${status}`)
+            
+            // Optionally trigger any other actions based on status changes
+            // For example, you could refresh the kanban board or show notifications
+        })
 </script>

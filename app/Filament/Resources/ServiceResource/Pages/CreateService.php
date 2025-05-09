@@ -19,7 +19,7 @@ class CreateService extends CreateRecord
 
 protected function beforeCreate(): void
 {
-    $recipient= auth()->user()->$this->id;
+    $recipient = auth()->id;
      Notification::make()
      ->title('Novo serviço no sistema')
      ->sendToDatabase($recipient);

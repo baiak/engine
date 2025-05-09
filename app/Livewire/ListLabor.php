@@ -113,7 +113,7 @@ class ListLabor extends Component implements HasForms, HasTable
                            /* ->formatStateUsing(fn ($state) => $state instanceof TypeOfLaborStatus ? $state->getIcon() : TypeOfLaborStatus::tryFrom($state)?->getIcon() ?? 'heroicon-o-question-mark-circle')
                             ->icon(fn ($state) => $state instanceof TypeOfLaborStatus ? $state->getIcon() : TypeOfLaborStatus::tryFrom($state)?->getIcon() ?? 'heroicon-o-question-mark-circle'),*/
 
-                           /*->formatStateUsing(fn ($state) =>
+                          ->formatStateUsing(fn ($state) =>
                            $state instanceof TypeOfLaborStatus
                                ? "<span class='inline-flex items-center whitespace-nowrap' {$state->getStyle()}>
                                  <i class='{$state->getIcon()}'</i>{$state->getLabel()}</span>"
@@ -153,7 +153,7 @@ class ListLabor extends Component implements HasForms, HasTable
                     //->model(ServiceLabor::class)
                     ->form([
                         Forms\Components\TextInput::make('user_id')
-                            ->default(auth()->id()),
+                            ->default(Auth::User()->id),
                         Forms\Components\Hidden::make('order_id')
                             ->default($this->ServiceLabor->order->id),
                         Forms\Components\Hidden::make('service_id')

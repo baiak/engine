@@ -62,12 +62,12 @@ use Mokhosh\FilamentKanban\Pages\KanbanBoard;
                  \Filament\Forms\Components\Select::make('selectedDepartment')
                      ->label('Departamento')
                      ->options(
-                         Department::with('user') // Carrega o relacionamento
+                        
+                         Department::with('service', 'users') // Carrega o relacionamento
                          ->get()
                              ->mapWithKeys(function ($department) {
-                                 // Formata a chave e o valor para o select
-                                 return [
-                                     $department->id => "{$department->title} - {$department->user->name}"
+                                 return [                                                                                                           
+                                     $department->id => "{$department->title} - {$department->users->first()->name}"
                                  ];
                              })
                      )

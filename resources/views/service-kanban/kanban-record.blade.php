@@ -23,7 +23,7 @@
         line-height: 1.4;
         border: 1px solid #e0e0e0;
         border-radius: 8px;
-        background-color: #ffffff;
+        background-color:hsl(0, 0.00%, 100.00%);
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         font-size: 14px;
     ">
@@ -56,15 +56,28 @@
                     padding: 8px;
                     border-radius: 6px;
                 ">
-                    {!! $this->userAvatar = app('userAvatar')($record->department->user->id) !!}
-                    <span style="
-                        margin-left: 8px;
-                        font-size: 14px;
-                        color: #181918;
-                        font-weight: bold;
-                    ">
-                        {{$this->userName = app('userName')($record->department->user->id)}}
-                    </span>
+                    @php
+                        $userId = $record->user_id ?? null;
+                    @endphp
+                    @if($userId)
+                        {!! app('userAvatar')($userId) !!}
+                        <span style="
+                            margin-left: 8px;
+                            font-size: 14px;
+                            color: #181918;
+                            font-weight: bold;
+                        ">
+                            {{ app('userName')($userId) }}
+                        </span>
+                    @else
+                        <span style="
+                            font-size: 14px;
+                            color: #888;
+                            font-style: italic;
+                        ">
+                            Usuário não atribuído
+                        </span>
+                    @endif
                 </div>
                 <p style="margin: 8px 0; color: #555; font-size: small">
                     <strong>Mão de obras ({{$record->labor->count()}}):</strong>
@@ -72,32 +85,24 @@
                 @if($record->labor->count() > 0)
                     <ul style="
                         list-style-type: none;
-                        padding: 0;
+                        padding: 5px;
                         margin: 0;
                         border: 1px solid #e0e0e0;
                         border-radius: 6px;
                         background-color: #ffffff;
                         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                        color: #333;
+                        font-size: 12px;
+                        line-height: 1.4;
                     ">
 
                         @foreach($record->labor as $getLabors)
-                            <li style="
-                                padding: 8px 12px;
-                                border-bottom: 1px solid #e0e0e0;
-                                color: #555;
-                                font-size: 12px;
-                                display: flex;
-                                justify-content: space-between;
-                                align-items: center;
-                            ">
-                                <strong>{{ $this->laborTitle = app('laborTitle')($getLabors->pivot->labor_id) }}</strong> -
-                                @livewire('kanban.labor-status-manager', [
-                                'laborPivotId' => $getLabors->pivot->id,
-                                'status' => $getLabors->pivot->status,
-                                'recordId' => $record->getKey()
-                                ], key('labor-status-'.$getLabors->pivot->id))
-                            </li>
+                         <li class="labor-item flex items-center justify-between" style="border-bottom:  #cacfd2  solid 1px; padding:4px 3px 6px;">
+                           <div><b>{{$getLabors->title}}</b></div>  
+                           <div>{{$getLabors->pivot->status}}</div>
+                         </li>
                         @endforeach
+
                     </ul>
                 @else
                     <p style="margin: 8px 0; color: #999; font-style: italic;">Sem mão de obras cadastradas</p>

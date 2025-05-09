@@ -2,155 +2,167 @@
 
 namespace App\Filament\Pages;
 
-use AllowDynamicProperties;
 use App\Enums\TypeOfServiceStatus;
 use App\Models\Department;
 use App\Models\Order;
 use App\Models\Service;
 use App\Models\ServiceLabor;
+use App\Models\User;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
 use Mokhosh\FilamentKanban\Pages\KanbanBoard;
+use Livewire\Attributes\On;
 
-
-#[AllowDynamicProperties] class ServicesKanbanBoard extends KanbanBoard
+class ServicesKanbanBoard extends KanbanBoard
 {
     protected static string $model = Service::class;
     protected static string $statusEnum = TypeOfServiceStatus::class;
-
     protected static string $recordTitleAttribute = 'formatted_title';
 
     public $selectedOrderNumber;
     public $selectedDepartment;
-
-    public $selectedOrderAndDepartment;
+    public $selectedDepartmentUser;
     public $selectedOrderAndDepartment_order_number;
     public $selectedOrderAndDepartment_department;
 
+    public string $getFilterTitle = '';
+    public $getFilterAttribute = '';
 
-    public $orderNumbers = [];
+    protected static string $view = 'service-kanban.kanban-board';
+    protected static string $headerView = 'service-kanban.kanban-header';
+    protected static string $recordView = 'service-kanban.kanban-record';
+    protected static string $statusView = 'service-kanban.kanban-status';
+    protected static string $scriptsView = 'service-kanban.kanban-scripts';
 
+    public bool $disableEditModal = true;
+
+    protected $listeners = [
+        'laborStatusUpdated' => 'refreshRecord',
+    ];
 
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('edit'),
-
+            Action::make('clearFilters')
+                ->label('Limpar Filtros')
+                ->color('danger')
+                ->icon('heroicon-o-x-circle')
+                ->visible(function() {
+                    return !empty($this->selectedOrderNumber) || 
+                           !empty($this->selectedDepartment) || 
+                           !empty($this->selectedOrderAndDepartment_order_number) || 
+                           !empty($this->selectedOrderAndDepartment_department);
+                })
+                ->action(function () {
+                    $this->reset([
+                        'selectedOrderNumber', 
+                        'selectedDepartment', 
+                        'selectedDepartmentUser', 
+                        'selectedOrderAndDepartment_order_number', 
+                        'selectedOrderAndDepartment_department'
+                    ]);
+                }),
+            
             Action::make('filterByOrderNumber')
-                ->label('Filtrar por ordem') // Mejor etiqueta para la acción
+                ->label('Filtrar por ordem')
                 ->form([
-                    \Filament\Forms\Components\Select::make('selectedOrderNumber')
+                    Select::make('selectedOrderNumber')
                         ->label('Número de Ordem')
-                        ->options(
-                            Service::pluck('order_number', 'order_number') // Más eficiente
-                        )
-                        ->placeholder('Seleccione un número de orden')
-                        ->searchable() // Permite buscar en la lista
-                        ->reactive() // Hace que el campo sea reactivo
-                        ->required() // Asegura que el usuario seleccione un valor
-                        ->rules(['exists:services,order_number'])// Valida que el valor exista en la base de datos
+                        ->options(Service::pluck('order_number', 'order_number')->toArray())
+                        ->placeholder('Selecione um número de ordem')
+                        ->searchable()
+                        ->reactive()
+                        ->required()
                         ->live(),
                 ])
                 ->action(function (array $data) {
-                    //resetar form
-                    $this->selectedOrderAndDepartment_order_number = null;
-                    $this->selectedOrderAndDepartment_department = null;
-                    $this->selectedDepartment = null;
-                    // Almacena el valor seleccionado en una propiedad del componente
+                    $this->reset(['selectedDepartment', 'selectedDepartmentUser', 'selectedOrderAndDepartment_order_number', 'selectedOrderAndDepartment_department']);
                     $this->selectedOrderNumber = $data['selectedOrderNumber'];
                 }),
 
             Action::make('filterByClientName')
                 ->label('Filtrar por cliente')
                 ->form([
-                    \Filament\Forms\Components\Select::make('selectedClientName')
+                    Select::make('selectedClientName')
                         ->label('Cliente')
                         ->options(
-                            Order::with('client','vehicle') // Carrega o relacionamento com Cliente e veiculo
-                            ->get()
-                                ->mapWithKeys(function ($order) {
-                                    // Formata a chave e o valor para o select
-                                    return [
-                                        $order->order_number => "Ordem :{$order->order_number} - {$order->client->name} - {$order->vehicle->factory}/{$order->vehicle->model}"
-                                    ];
-                                })
+                            Order::with(['client', 'vehicle'])->get()->mapWithKeys(function ($order) {
+                                return [
+                                    $order->order_number => "Ordem: {$order->order_number} - {$order->client->name} - {$order->vehicle->factory}/{$order->vehicle->model}"
+                                ];
+                            })->toArray()
                         )
                         ->placeholder('Selecione o cliente')
-                        ->searchable() // Permite buscar en la lista
-                        ->reactive() // Hace que el campo sea reactivo
-                        ->required() // Asegura que el usuario seleccione un valor
-                        ->live()
+                        ->searchable()
+                        ->reactive()
+                        ->required()
+                        ->live(),
                 ])
                 ->action(function (array $data) {
-                    //resetar form
-                    $this->selectedOrderAndDepartment_order_number = null;
-                    $this->selectedOrderAndDepartment_department = null;
-                    $this->selectedDepartment = null;
-                    // Almacena el valor seleccionado en una propiedad del componente
+                    $this->reset(['selectedDepartment', 'selectedDepartmentUser', 'selectedOrderAndDepartment_order_number', 'selectedOrderAndDepartment_department']);
                     $this->selectedOrderNumber = $data['selectedClientName'];
                 }),
-
             Action::make('filterByDepartment')
                 ->label('Filtrar por departamento')
                 ->form([
-                    \Filament\Forms\Components\Select::make('selectedDepartment')
+                    Select::make('selectedDepartment')
                         ->label('Departamento')
                         ->options(
-                            Department::with('user') // Carrega o relacionamento
-                            ->get()
-                                ->mapWithKeys(function ($department) {
-                                    // Formata a chave e o valor para o select
-                                    return [
-                                        $department->id => "{$department->title} - {$department->user->name}"
-                                    ];
-                                })
+                            Department::with(['service', 'users'])->get()->mapWithKeys(function ($department) {
+                                return [
+                                    $department->id => "{$department->title}"
+                                ];
+                            })->toArray()
                         )
                         ->placeholder('Selecione o departamento')
-                        ->searchable() // Permite buscar en la lista
-                        ->reactive() // Hace que el campo sea reactivo
-                        ->required() // Asegura que el usuario seleccione un valor
+                        ->searchable()
+                        ->reactive()
+                        ->required()
+                        ->live()
+                        ->afterStateUpdated(function ($state, callable $set) {
+                            $set('selectedDepartmentUser', null);
+                        }),
+                    
+                    Select::make('selectedDepartmentUser')
+                        ->label('Usuário do Departamento')
+                        ->options(function (callable $get) {
+                            $departmentId = $get('selectedDepartment');
+                            if (!$departmentId) {
+                                return [];
+                            }
+                            
+                            $department = Department::find($departmentId);
+                            if (!$department) {
+                                return [];
+                            }
+                            
+                            return $department->users()
+                                ->wherePivot('is_active', true)
+                                ->get()
+                                ->mapWithKeys(function ($user) {
+                                    $responsibleText = $user->pivot->is_responsible ? ' (Responsável)' : '';
+                                    return [$user->id => $user->name . $responsibleText];
+                                })
+                                ->toArray();
+                        })
+                        ->placeholder('Selecione o usuário (opcional)')
+                        ->searchable()
+                        ->reactive()
+                        ->disabled(function (callable $get) {
+                            return empty($get('selectedDepartment'));
+                        })
+                        ->live(),
                 ])
                 ->action(function (array $data) {
-                    //resetar form
-                    $this->selectedOrderAndDepartment_order_number = null;
-                    $this->selectedOrderAndDepartment_department = null;
-                    $this->selectedOrderNumber = null;
-                    // Almacena el valor seleccionado en una propiedad del componente
+                    $this->reset(['selectedOrderNumber', 'selectedOrderAndDepartment_order_number', 'selectedOrderAndDepartment_department']);
                     $this->selectedDepartment = $data['selectedDepartment'];
-                }),
-
-            Action::make('filterByOrderNumberAndDepartment')
-                ->label('Filtrar por Ordem e Departamento')
-                ->form([
-                    \Filament\Forms\Components\Select::make('selectedOrderNumber')
-                    ->options(
-                        Service::pluck('order_number', 'order_number')
-                    ),
-                    \Filament\Forms\Components\Select::make('selectedDepartment')
-                    ->options(
-                        Department::with('user') // Carrega o relacionamento
-                        ->get()
-                            ->mapWithKeys(function ($department) {
-                                // Formata a chave e o valor para o select
-                                return [
-                                    $department->id => "{$department->title} - {$department->user->name}"
-                                ];
-                            })
-                    )
-                ])
-                ->action(function (array $data) {
-                    //resetar form
-                    $this->selectedOrderNumber = null;
-                    $this->selectedDepartment = null;
-
-                    $this->selectedOrderAndDepartment_order_number = $data['selectedOrderNumber'];
-                    $this->selectedOrderAndDepartment_department = $data['selectedDepartment'];
-                })
+                    $this->selectedDepartmentUser = $data['selectedDepartmentUser'] ?? null;
+                }),               
         ];
     }
-    public string $getFilterTitle = '';
-    public $getFilterAttribute = '';
+
     protected function records(): \Illuminate\Support\Collection
-    {     // Se nenhum filtro estiver definido, retorna todos os registros
+    {
         if (
             empty($this->selectedOrderNumber) &&
             empty($this->selectedDepartment) &&
@@ -158,100 +170,107 @@ use Mokhosh\FilamentKanban\Pages\KanbanBoard;
         ) {
             return Service::all();
         }
-        /*return Service::query()
-            ->when($this->selectedOrderNumber, fn($query) =>
-            $query->where('order_number', $this->selectedOrderNumber)
-            )
-            ->when($this->selectedDepartment, fn($query) =>
-            $query->where('department_id', $this->selectedDepartment)
-            )
-            ->when(
-                $this->selectedOrderAndDepartment_order_number && $this->selectedOrderAndDepartment_department,
-                fn($query) => $query->where('department_id', $this->selectedOrderAndDepartment_department)
-                    ->where('order_number', $this->selectedOrderAndDepartment_order_number)
-            )
-            ->get();-*/
-        return Service::query()
-            ->when($this->selectedOrderNumber, function ($query) {
-                return $query->where('order_number', $this->selectedOrderNumber);
-            })
-           ->when($this->selectedDepartment, function ($query) {
-               return $query->where('department_id', $this->selectedDepartment);
-           })
-            ->when($this->selectedOrderAndDepartment_order_number && $this->selectedOrderAndDepartment_department,
-                function ($query) {
-                 return $query->where('department_id', $this->selectedOrderAndDepartment_department)
-                     ->where('order_number', $this->selectedOrderAndDepartment_order_number);
-                })->get();
+
+        $query = Service::query();
+
+        // Filtro por número de ordem
+        if ($this->selectedOrderNumber) {
+            $query->where('order_number', $this->selectedOrderNumber);
+        }
+
+        // Filtro por departamento
+        if ($this->selectedDepartment) {
+            $query->where('department_id', $this->selectedDepartment);
+            
+            // Se tiver usuário selecionado, filtra pelos serviços desse usuário
+            if ($this->selectedDepartmentUser) {
+                $query->where('user_id', $this->selectedDepartmentUser);
+            }
+        }
+
+        // Filtro por ordem e departamento combinados
+        if ($this->selectedOrderAndDepartment_order_number && $this->selectedOrderAndDepartment_department) {
+            $query->where('order_number', $this->selectedOrderAndDepartment_order_number)
+                  ->where('department_id', $this->selectedOrderAndDepartment_department);
+        }
+
+        return $query->get();
     }
 
     protected function getAdditionalData(): string
-    {
-        if ($this->selectedOrderNumber) {
-            return "Exibindo serviços da ordem: {$this->selectedOrderNumber}";
-        }
-
-        if ($this->selectedDepartment) {
-            $department = Department::find($this->selectedDepartment);
-
-            if (!$department) {
-                return 'Departamento não encontrado';
-            }
-
-            $user = optional($department->user);
-            $userAvatar = app('userAvatar')($user->id ?? null);
-            $userName = app('userName')($user->id ?? 'Usuário desconhecido');
-
-            return <<<HTML
-        <div style="background-color: #f0f0f0; padding: 8px; border-radius: 6px; font-size: 14px; color: #181918;">
-            Exibindo serviços do departamento: <b>{$department->title}</b>
-            <div style="display: flex; align-items: center; margin: 8px 0; background-color: #f0f0f0; padding: 8px; border-radius: 6px;">
-                {$userAvatar}
-                <span style="margin-left: 8px; font-size: 14px; color: #181918; font-weight: bold;">{$userName}</span>
-            </div>
-        </div>
-        HTML;
-        }
-
-        if ($this->selectedOrderAndDepartment_order_number && $this->selectedOrderAndDepartment_department) {
-            return "Ordem: {$this->selectedOrderAndDepartment_order_number} - Departamento: {$this->selectedOrderAndDepartment_department}";
-        }
-
-        return 'Exibindo todos os serviços de todas as ordens';
+{
+    if ($this->selectedOrderNumber) {
+        return "Exibindo serviços da ordem: {$this->selectedOrderNumber}";
     }
 
+    if ($this->selectedDepartment) {
+        $department = Department::find($this->selectedDepartment);
 
-    protected static string $view = 'service-kanban.kanban-board';
+        if (!$department) {
+            return '<div class="text-red-600 dark:text-red-400">Departamento não encontrado</div>';
+        }
 
-    protected static string $headerView = 'service-kanban.kanban-header';
+        $html = '<div class="inline-block rounded-lg bg-gray-100 dark:bg-gray-800 px-4 py-3 text-sm text-gray-800 dark:text-gray-200 space-y-2 shadow-md">';
+        $html .= "<div>Exibindo serviços do departamento: <strong>{$department->title}</strong></div>";
 
-    protected static string $recordView = 'service-kanban.kanban-record';
+        if ($this->selectedDepartmentUser) {
+            $user = User::find($this->selectedDepartmentUser);
 
-    protected static string $statusView = 'service-kanban.kanban-status';
+            if ($user) {
+                $userAvatar = app('userAvatar')($user->id);
+                $userName = $user->name ?? 'Usuário desconhecido';
 
-    protected static string $scriptsView = 'service-kanban.kanban-scripts';
+                $html .= <<<HTML
+                    <div class="flex items-center gap-2">
+                        {$userAvatar}
+                        <span class="font-semibold text-sm">{$userName}</span>
+                    </div>
+                HTML;
+            }
+        } else {
+            $activeUsers = $department->activeUsers()->get();
 
-    public bool $disableEditModal = true;
+            if ($activeUsers->isNotEmpty()) {                
 
-    protected $listeners = [
-        'laborStatusUpdated' => 'refreshRecord'
-    ];
+                foreach ($activeUsers as $user) {
+                    $userAvatar = app('userAvatar')($user->id);
+                    $userName = $user->name;
+                    $responsible = optional($user->pivot)->is_responsible
+                        ? ' <span class="text-xs text-blue-600 dark:text-blue-400">(Responsável)</span>'
+                        : '';
+
+                    $html .= <<<HTML
+                        <div class="flex items-center gap-2">
+                            {$userAvatar}
+                            <span class="text-sm">{$userName}{$responsible}</span>
+                        </div>
+                    HTML;
+                }
+            }
+        }
+
+        $html .= '</div>';
+        return $html;
+    }
+
+    if ($this->selectedOrderAndDepartment_order_number && $this->selectedOrderAndDepartment_department) {
+        return "<div class='inline-block text-sm text-gray-700 dark:text-gray-300'>
+                    Ordem: <strong>{$this->selectedOrderAndDepartment_order_number}</strong> -
+                    Departamento: <strong>{$this->selectedOrderAndDepartment_department}</strong>
+                </div>";
+    }
+
+    return '<div class="inline-block text-sm text-gray-600 dark:text-gray-300">Exibindo todos os serviços de todas as ordens</div>';
+}
+
+
 
     #[On('laborStatusUpdated')]
-    public function refreshRecord($recordId)
+    public function refreshRecord($recordId): void
     {
-        // Em vez de recarregar todo o card, apenas atualizar o modelo
         $record = ServiceLabor::find($recordId);
-
-        // Não recarregue o componente inteiro
-        // NÃO faça $this->dispatch('refreshKanban');
-
-        // Você pode atualizar uma propriedade específica se necessário
-        // $this->records = YourRecordModel::all(); // Só se necessário
-
-        // Ou emitir um evento específico para o cliente
-        $this->dispatch('recordUpdated', recordId: $recordId);
+        if ($record) {
+            $this->dispatch('recordUpdated', id: $record->id);
+        }
     }
-
-
 }
