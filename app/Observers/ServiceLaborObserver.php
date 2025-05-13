@@ -36,7 +36,7 @@ class ServiceLaborObserver
         // Verifica se o status da mão de obra foi alterado para algo diferente de 'Aprovado'
         if ($serviceLabor->status !== 'Aprovado') {
             // Obtém o ID do serviço relacionado
-            Log::info('o status nao é aprovado, o service_id é '.$serviceLabor->service_id);
+           // Log::info('o status nao é aprovado, o service_id é '.$serviceLabor->service_id);
             $serviceId = $serviceLabor->service_id;
 
             // Verifica na tabela `services` se o serviço está com status 'Aprovado'
@@ -51,6 +51,29 @@ class ServiceLaborObserver
             }
         }
        // Log::info('ServiceLabor atualizado event triggered.', ['id' => $serviceLabor->id]);
+    }
+    public function saved(ServiceLabor $serviceLabor)
+    {
+        // Sempre verifica se o status da mão de obra atual é 'Aprovado'
+        if ($serviceLabor->status === 'Aprovado') {
+            $serviceId = $serviceLabor->service_id;
+    
+            // Pega todas as mãos de obra do serviço
+            $allLabors = ServiceLabor::where('service_id', $serviceId)->get();
+    
+            // Verifica se todas estão com status 'Aprovado'
+            $allApproved = $allLabors->every(function ($labor) {
+                return $labor->status === 'Aprovado';
+            });
+    
+            if ($allApproved) {
+                // Atualiza o status do serviço se ele ainda não for 'Aprovado'
+                $service = Service::find($serviceId);
+                if ($service && $service->status !== 'Aprovado') {
+                    $service->updateQuietly(['status' => 'Aprovado']);
+                }
+            }
+        }
     }
 
 

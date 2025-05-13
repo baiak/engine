@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Observers;
 
 use App\Enums\TypeOfServiceStatus;
@@ -24,21 +25,12 @@ class ServiceObserver
             'user_id' => Auth::id(),
             'created_at' => now(),
         ]);
-        //notificacao
-        //$userData = $service->department->user;
-        $userData =  User::findOrFail($service->user);
-        $userAuth = User::findOrFail(Auth::id());
-        // Log::info('USERDATA -'.$userData);
-        //envia a notificacao para o usuario selecionado do departamento no form
-
-        //$userDataId = $service->department->user->id;
-
-       // $userData->notify(new ServiceCreateNotification($service, $userData->name, $userData->id, $service->order_id, $service->order->order_number ));
-        //iterar sob uma query com filtragem de administrador e enviar notificacao para cada registro encontrado
-
-        //Log::info('Servico criado -'.$userData.'-', $service->toArray());
 
         try {
+            $userData = User::findOrFail($service->user);
+            $userAuth = User::findOrFail(Auth::id());
+
+            // Envia notificação para o usuário associado ao serviço
             $userData->notify(new ServiceCreateNotification(
                 $service,
                 $userAuth->name,
@@ -46,12 +38,11 @@ class ServiceObserver
                 $service->order_id,
                 $service->order->order_number
             ));
-            //envia notificacao para todos os admins
-            //// Obtém todos os usuários administradores
+
+            // Envia notificação para todos os administradores
             $adminUsers = User::where('is_admin', 1)->get();
-            // Itera sobre os usuários e envia a notificação
-            foreach ($adminUsers as $userDataFor) {
-                $userDataFor->notify(new ServiceCreateNotification(
+            foreach ($adminUsers as $adminUser ) {
+                $adminUser ->notify(new ServiceCreateNotification(
                     $service,
                     $userAuth->name,
                     $userData->id,
@@ -59,16 +50,13 @@ class ServiceObserver
                     $service->order->order_number
                 ));
             }
-
         } catch (\Exception $e) {
             Log::error('Erro ao enviar notificação:', [
                 'message' => $e->getMessage(),
-                'user_id' => $userData->id,
+                'user_id' => $service->user,
                 'service_id' => $service->id,
             ]);
-
         }
-
     }
 
     public function updated(Service $service): void
@@ -83,28 +71,25 @@ class ServiceObserver
             'created_at' => now(),
         ]);
 
-        $getStatus = $service->getChanges()['status'];
-        Log::info("Status mudado olha o json capturado ". $getStatus);
+        if ($service->isDirty('status')) {
+            $getStatus = $service->getChanges()['status'];
+            Log::info("Status mudado: " . $getStatus);
 
-        //logica para quando um servico for arrastado para aprovado, todas as maos de obra sao aprovadas também
-
-            if(in_array($getStatus, ['Aprovado', 'Pendente'])){
-               // Log::info("Entrou no if do aprovado o id do servico é ".$service->id);
-
-
-                //iterar sobre a tabela service_labors para acessar todas as maos de obras deste servico
-
+            if (in_array($getStatus, ['Aprovado', 'Pendente'])) {
                 $serviceLaborData = ServiceLabor::where('service_id', $service->id)->get();
 
-                foreach($serviceLaborData as $serviceLabor){
-                    //Log::info("aqui as maos de obra deste servico ".$serviceLabor->id);
+                /*foreach ($serviceLaborData as $serviceLabor) {
                     DB::table('service_labors')
                         ->where('id', $serviceLabor->id)
-                        ->update([
-                        'status' => $getStatus,
-                    ]);
+                        ->update(['status' => $getStatus]);
+                }*/
+                foreach ($serviceLaborData as $serviceLabor) {
+                    if ($serviceLabor->status !== $getStatus) {
+                        $serviceLabor->update(['status' => $getStatus]);
+                    }
                 }
             }
+        }
     }
 
     public function deleted(Service $service): void
@@ -115,7 +100,7 @@ class ServiceObserver
             'action' => 'deleted',
             'old_values' => json_encode($service->getAttributes()),
             'new_values' => null,
-            'user_id' => Auth::id(),  // Armazena o ID do usuário logado
+            'user_id' => Auth::id(),
             'created_at' => now(),
         ]);
     }
