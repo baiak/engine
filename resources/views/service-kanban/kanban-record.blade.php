@@ -76,6 +76,7 @@
                     background-color:rgba(240, 240, 240, 0.23);
                     padding: 8px;
                     border-radius: 6px;
+                    border: 1px solid rgb(34, 34, 34);
                 ">
                             @php
                             $userId = $record->user_id ?? null;
@@ -87,6 +88,7 @@
                             font-size: 14px;
                             color: #181918;
                             font-weight: bold;
+                            
                         ">
                                 {{ app('userName')($userId) }} - {{$record->department->title}}
                             </span>

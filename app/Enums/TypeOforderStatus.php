@@ -8,7 +8,7 @@ use Mokhosh\FilamentKanban\Concerns\IsKanbanStatus;
 enum TypeOforderStatus: string implements HasLabel
 {
     use IsKanbanStatus;
-    case aguardando_orcamentos = 'Aguardando orçamentos';
+    case aguardando_servicos = 'Aguardando serviços';
     //case aguardando_aprovacao_cliente = 'Aguardando aprovacao do cliente';
     case aprovado = 'Aprovado';
     //case em_andamento = 'Em Andamento';
@@ -17,7 +17,7 @@ enum TypeOforderStatus: string implements HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::aguardando_orcamentos => 'Aguardando orçamentos',
+            self::aguardando_servicos => 'Aguardando serviços',
             //self::aguardando_aprovacao_cliente=>'Aguardando aprovacao do cliente',
             self::aprovado => 'Aprovado',
            // self::em_andamento => 'Em Andamento',

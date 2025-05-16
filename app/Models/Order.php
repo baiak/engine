@@ -11,20 +11,21 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\EloquentSortable\Sortable;
 use Spatie\EloquentSortable\SortableTrait;
+
 class Order extends Model implements Sortable
 {
     use HasFactory;
     use SortableTrait;
 
     protected $fillable =
-        [
-            'user_id',
-            'client_id',
-            'vehicle_id',
-            'order_number',
-            'deadline',
-            'status'
-        ];
+    [
+        'user_id',
+        'client_id',
+        'vehicle_id',
+        'order_number',
+        'deadline',
+        'status'
+    ];
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -46,10 +47,11 @@ class Order extends Model implements Sortable
     {
         return $this->hasMany(ServiceAuditLog::class);
     }
-    public function labor():BelongsToMany
+    public function labor(): BelongsToMany
     {
         return $this->belongsToMany(Labor::class, 'service_labors', 'labor_id', 'service_id')
-            ->withPivot('user_id',
+            ->withPivot(
+                'user_id',
                 'order_id',
                 'service_id',
                 'labor_id',
@@ -58,7 +60,8 @@ class Order extends Model implements Sortable
                 'startedAt',
                 'finishedAt',
                 'status',
-                'description')
+                'description'
+            )
             ->withTimestamps();
     }
 
@@ -70,9 +73,14 @@ class Order extends Model implements Sortable
     {
         $orderNumber = $this->order_number ?? 'Sem número';
         $clientName = $this->client->name ?? 'Cliente Desconhecido';
-        $vehicleModel = $this->vehicle->factory.'/'.$this->vehicle->model ?? 'Carro Desconhecido';
+        $vehicleModel = $this->vehicle->factory . '/' . $this->vehicle->model ?? 'Carro Desconhecido';
 
         return "{$orderNumber} - {$vehicleModel} - {$clientName}";
+    }
+
+    public function allServiceLabors()
+    {
+        return ServiceLabor::whereIn('service_id', $this->service->pluck('id'))->get();
     }
 
     protected $casts = [

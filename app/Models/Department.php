@@ -19,7 +19,6 @@ class Department extends Model
     public function service(): HasOne
     {
         return $this->hasOne(Service::class);
-
     }
 
 
@@ -32,7 +31,9 @@ class Department extends Model
 
     public function activeUsers(): BelongsToMany
     {
-        return $this->users()->wherePivot('is_active', true);
+        return $this->users()
+            ->wherePivot('is_active', true)
+            ->select('users.name', 'users.id');
     }
 
     public function responsibleUser()
