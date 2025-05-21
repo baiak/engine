@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Enums\TypeOforderStatus;
+use App\Enums\TypeOfLaborStatus;
 use App\Enums\TypeOfServiceStatus;
 use App\Models\Client;
 use App\Models\Department;
@@ -12,6 +13,7 @@ use App\Models\Service;
 use App\Models\ServiceAuditLog;
 use App\Models\Vehicle;
 use App\Models\User;
+use App\Models\ServiceLabor;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\RichEditor;
@@ -21,6 +23,7 @@ use Filament\Notifications\Notification;
 use Mokhosh\FilamentKanban\Pages\KanbanBoard;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\On; // Import the correct namespace for the On attribute
 
 class OrdersKanbanBoard extends KanbanBoard
 {
@@ -289,5 +292,52 @@ class OrdersKanbanBoard extends KanbanBoard
         Order::setNewOrder($orderedIds);
     }*/
         ];
+    }
+    public function updateLaborStatus($serviceLaborId, $newStatus, $recordId)
+    {
+        $serviceLabor = ServiceLabor::find($serviceLaborId);
+
+        if ($serviceLabor) {
+            try {
+                $statusEnum = TypeOfLaborStatus::from($newStatus); // Valida se o status existe no Enum
+                $serviceLabor->status = $statusEnum;
+                $serviceLabor->save();
+
+                // Dispara um evento para que o Alpine possa atualizar a interface se necessário,
+                // ou para que o próprio Livewire possa re-renderizar partes específicas.
+                // O $this->dispatch('laborStatusUpdated', recordId: $serviceLabor->service_id) pode ser usado
+                // se a atualização do status da mão de obra deve refletir no card de serviço (Service).
+                // Se você só quer que o status no item da lista seja atualizado visualmente pelo Alpine,
+                // a chamada $wire já faz isso no Blade.
+
+                // Se a mudança no status da mão de obra pode alterar o status do serviço principal,
+                // você pode recalcular o status do serviço aqui e então:
+                // $this->dispatch('refreshKanbanRecord'); // Atualiza todo o card.
+                // Ou, se tiver um método específico para atualizar apenas o record:
+                // $this->dispatch('recordUpdated', id: $recordId);
+
+                // Para este caso, vamos assumir que queremos apenas notificar que foi atualizado,
+                // e o Alpine já cuidou da parte visual imediata do status da mão de obra.
+                // Se o card principal (Service) precisa ser re-renderizado devido a essa mudança:
+                $this->dispatch('laborStatusUpdated', recordId: $recordId)->self(); // Notifica o próprio componente para se atualizar
+                $this->dispatch('notify', message: 'Status da mão de obra atualizado com sucesso!', type: 'success');
+
+
+            } catch (\ValueError $e) {
+                // Lidar com o caso de um valor de status inválido
+                $this->dispatch('notify', message: 'Erro: Status inválido selecionado.', type: 'danger');
+            }
+        } else {
+            $this->dispatch('notify', message: 'Erro: Mão de obra não encontrada.', type: 'danger');
+        }
+    }
+
+    #[On('laborStatusUpdated')]
+    public function refreshRecord($recordId): void
+    {
+        $record = ServiceLabor::find($recordId);
+        if ($record) {
+            $this->dispatch('recordUpdated', id: $record->id);
+        }
     }
 }

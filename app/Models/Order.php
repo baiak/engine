@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\EloquentSortable\Sortable;
 use Spatie\EloquentSortable\SortableTrait;
+use App\Models\Observation;
 
 class Order extends Model implements Sortable
 {
@@ -81,6 +82,14 @@ class Order extends Model implements Sortable
     public function allServiceLabors()
     {
         return ServiceLabor::whereIn('service_id', $this->service->pluck('id'))->get();
+    }
+    // In App\Models\Order.php, App\Models\Service.php, and App\Models\ServiceLabor.php
+
+
+    // ... inside the respective model class ...
+    public function observations(): HasMany
+    {
+        return $this->hasMany(Observation::class);
     }
 
     protected $casts = [

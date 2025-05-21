@@ -41,7 +41,7 @@
             <div class="text-sm mt-2 text-gray-600">
                 <div>Cliente: <strong>{{ $record->client->name }}</strong></div>
                 <div>Veículo: <strong>{{ $record->vehicle->factory }}/{{ $record->vehicle->model }}</strong></div>
-                <div>Prazo: <strong>{{ \Carbon\Carbon::parse($record->deadline)->format('d/m/Y') }}</strong></div>
+                <div>Prazo da ordem: <strong>{{ \Carbon\Carbon::parse($record->deadline)->format('d/m/Y') }}</strong></div>
             </div>
 
             <div x-show="open" x-transition class="mt-3 text-sm text-gray-700 space-y-1">
@@ -55,9 +55,9 @@
 
                             <ul class="list-none p-0 m-0 space-y-3">
                                 @foreach($record->service as $serviceIndex => $service)
-                                <li class="border border-black rounded-lg p-3 bg-white shadow-sm">
+                                <li class="border border-black rounded-lg p-3 bg-white shadow-sm" style="border-color: #333;">
                                     <div x-data="{ serviceOpen: false }" class="w-full">
-                                        <div @click="serviceOpen = !serviceOpen" class="flex items-center justify-between cursor-pointer p-2 bg-gray-50 rounded-md mb-2">
+                                        <div @click="serviceOpen = !serviceOpen" class="border-black flex items-center justify-between cursor-pointer p-2 bg-gray-50 rounded-md mb-2">
                                             <div class="flex items-center">
 
                                                 <span class="font-medium">Serviço {{ $serviceIndex + 1 }}: {{ $service->part->title ?? 'Sem peça específica' }}</span>
@@ -68,27 +68,27 @@
                                         </div>
 
                                         <div x-show="serviceOpen" x-transition class="pl-2">
-                                            <div class="flex items-center mb-3">
-                                                <div class="flex-shrink-0 mr-3">
+                                            <div class="flex items-top mb-3 ">
+                                                <div class="flex-shrink-0 mr-3 px-3">
                                                     {!! app('userAvatar')($service->user_id) !!}
                                                 </div>
                                                 <div>
-                                                    <p class="text-sm text-gray">
+                                                    <p class="text-xs text-gray">
                                                         Responsável: <strong>{{ app('userName')($service->user_id) }}</strong>
                                                     </p>
 
-                                                    <p class="text-sm">
-                                                        Departamento: {{$service->department->title}}
+                                                    <p class="text-xs">
+                                                        Departamento: <strong>{{$service->department->title}}</strong>
                                                     </p>
 
-                                                    <p class="text-sm">
-                                                        Prazo:
+                                                    <p class="text-xs">
+                                                        Prazo do serviço:
                                                         <strong>
-                                                            {{ $service->deadline}}
+                                                            {{ \Carbon\Carbon::parse($service->deadline)->format('d/m/Y') }}
                                                         </strong>
                                                     </p>
 
-                                                    <p class="text-sm">
+                                                    <p class="text-xs mt-1">
                                                         Status:
                                                         <span class="px-2 py-1 rounded-full text-xs 
                                                 @if($service->status->value === 'concluido') bg-green-100 text-green-800
@@ -101,18 +101,18 @@
                                                 </div>
                                             </div>
 
-                                            <div class="mt-2 p-2 bg-gray-50 rounded border border-gray-100">
-                                                <p class="text-sm font-medium text-gray-700 mb-1">Descrição:</p>
-                                                <div class="text-sm prose prose-sm max-w-none">{!! $service->description !!}</div>
+                                            <div class="mt-2 p-2 bg-gray-50 rounded border border-gray">
+                                                <p class="text-xs font-medium text-gray-700 mb-1">Descrição:</p>
+                                                <div class="text-xs prose prose-sm max-w-none">{!! $service->description !!}</div>
                                             </div>
 
                                             <div class="mt-3 border-l-2 border-indigo-200 pl-3">
                                                 <p class="text-xs font-medium text-gray-700 mb-1">Mão de Obra:</p>
 
                                                 @if($service->labor->count() > 0)
-                                                <ul class="space-y-1">
+                                                <ul class="space-y-1" style="border-left: 1px solid #ccc;">
                                                     @foreach($service->labor as $laborIndex => $labor)
-                                                    <li class="flex items-center justify-between py-1 px-2 rounded hover:bg-gray-50">
+                                                    <li class="flex items-center bg-gray-50 rounded justify-between py-1 px-2 rounded hover:bg-gray" >
                                                         <div class="flex items-center">
                                                             <span class="h-2 w-2 rounded-full mr-2
                                                             @if($labor->pivot->status === 'concluido') bg-green-500
@@ -120,7 +120,7 @@
                                                             @elseif($labor->pivot->status === 'aprovado') bg-blue-500
                                                             @else bg-gray-400 @endif">
                                                             </span>
-                                                            <span class="text-xs">{{ $laborIndex + 1 }}. {{ $labor->title }}</span>
+                                                            <span class="text-xs">{{ $labor->title }}</span>
                                                         </div>
 
                                                         <span class="text-xs px-1.5 py-0.5 rounded-full

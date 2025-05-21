@@ -15,26 +15,27 @@ use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Support\Facades\Log;
 use Spatie\EloquentSortable\Sortable;
 use Spatie\EloquentSortable\SortableTrait;
+use App\Models\Observation;
 
 class Service extends Model implements Sortable
 {
     use SortableTrait;
     use HasFactory;
     protected $fillable =
-        [
-            'order_id',
-            'part_id',
-            'department_id',
-            'deadline',
-            'status',
-            'description',
-            'order_number',
-            'user_id',
-        ];
+    [
+        'order_id',
+        'part_id',
+        'department_id',
+        'deadline',
+        'status',
+        'description',
+        'order_number',
+        'user_id',
+    ];
     public function user()
     {
-    return $this->belongsTo(\App\Models\User::class);
-}
+        return $this->belongsTo(\App\Models\User::class);
+    }
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
@@ -57,19 +58,22 @@ class Service extends Model implements Sortable
         return $this->belongsTo(Labor::class);
     }
 
-    public function labor():BelongsToMany
+    public function labor(): BelongsToMany
     {
         return $this->belongsToMany(Labor::class, 'service_labors', 'service_id', 'labor_id')
-               ->withPivot('id','user_id',
-                   'order_id',
-                   'service_id',
-                   'labor_id',
-                   'includedAt',
-                   'approvedAt',
-                   'startedAt',
-                   'finishedAt',
-                   'status',
-                   'description')
+            ->withPivot(
+                'id',
+                'user_id',
+                'order_id',
+                'service_id',
+                'labor_id',
+                'includedAt',
+                'approvedAt',
+                'startedAt',
+                'finishedAt',
+                'status',
+                'description'
+            )
             ->withTimestamps();
     }
     /**
@@ -110,7 +114,6 @@ class Service extends Model implements Sortable
     public function serviceAuditLog(): HasOne
     {
         return $this->hasOne(ServiceAuditLog::class);
-
     }
     public function statusHistory()
     {
@@ -120,9 +123,18 @@ class Service extends Model implements Sortable
     {
         $orderNumber = $this->order->order_number ?? 'Sem número';
         $clientName = $this->order->client->name ?? 'Cliente Desconhecido';
-        $vehicleModel = $this->order->vehicle->factory.'/'.$this->order->vehicle->model ?? 'Carro Desconhecido';
+        $vehicleModel = $this->order->vehicle->factory . '/' . $this->order->vehicle->model ?? 'Carro Desconhecido';
 
         return "{$orderNumber} - {$vehicleModel} - {$clientName}";
+    }
+    // In App\Models\Order.php, App\Models\Service.php, and App\Models\ServiceLabor.php
+    
+
+
+    // ... inside the respective model class ...
+    public function observations(): HasMany
+    {
+        return $this->hasMany(Observation::class);
     }
 
 

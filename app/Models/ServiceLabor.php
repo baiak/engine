@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Observation;
 
 
 class ServiceLabor extends Model
@@ -22,7 +24,7 @@ class ServiceLabor extends Model
                 'event' => 'created',
                 'old_values' => null,
                 'new_values' => json_encode($serviceLabor->getAttributes()),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
         });
     }
@@ -31,18 +33,19 @@ class ServiceLabor extends Model
     use HasFactory;
     protected $table = 'service_labors';
     protected $fillable =
-        [   'id',
-            'user_id',
-            'order_id',
-            'service_id',
-            'labor_id',
-            'includedAt',
-            'approvedAt',
-            'startedAt',
-            'finishedAt',
-            'status',
-            'description',
-        ];
+    [
+        'id',
+        'user_id',
+        'order_id',
+        'service_id',
+        'labor_id',
+        'includedAt',
+        'approvedAt',
+        'startedAt',
+        'finishedAt',
+        'status',
+        'description',
+    ];
 
 
 
@@ -50,24 +53,24 @@ class ServiceLabor extends Model
     {
         return $this->hasMany(ServiceLaborLog::class, 'service_labor_id');
     }
-    public function labor():BelongsTo
+    public function labor(): BelongsTo
     {
         return $this->belongsTo(Labor::class, 'labor_id');
     }
 
-    public function service():BelongsTo
+    public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class, 'service_id');
     }
 
-    public function order():BelongsTo
+    public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
     }
 
     public function getOrderDetails(): BelongsTo
     {
-         return $this->belongsTo(Order::class, 'order_id');
+        return $this->belongsTo(Order::class, 'order_id');
     }
 
     public function getVehicleDetailsAttribute()
@@ -80,10 +83,19 @@ class ServiceLabor extends Model
 
         return "{$vehicle->factory}/{$vehicle->model}/{$vehicle->motor}";
     }
+    // In App\Models\Order.php, App\Models\Service.php, and App\Models\ServiceLabor.php
+   
+    
+
+    // ... inside the respective model class ...
+    public function observations(): HasMany
+    {
+        return $this->hasMany(Observation::class);
+    }
 
 
 
-    public function user():HasOneOrMany
+    public function user(): HasOneOrMany
     {
         return $this->hasOne(User::class);
     }
@@ -95,6 +107,4 @@ class ServiceLabor extends Model
     {
         return Order::where('id', $id)->value('order_number');
     }
-
-
 }
