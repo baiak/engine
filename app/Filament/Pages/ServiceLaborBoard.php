@@ -50,21 +50,11 @@ use Livewire\Attributes\On;
     protected static string $scriptsView = 'service-labor-kanban.kanban-scripts';
 
     public ?ServiceLabor $selectedLaborForAction = null;
+    public ?ServiceLabor $selectedLaborForObservation = null; // Property to hold the record for adding observation
 
-    // Add a listener for the event dispatched by the button
-    /*protected function getListeners(): array
-    {
-        return array_merge(parent::getListeners(), [
-            'openCancelLaborModal' => 'mountCancelLaborAction',
-        ]);
-    }*/
-
-    // metodo para abrir o modal de cancelamento
     #[On('openCancelLaborModal')]
     public function openCancelModal($recordId): void
     {
-        //Log::info('ID recebido em openCancelModal:', ['recordId' => $recordId]);
-
         if (empty($recordId)) {
             Notification::make()
                 ->title('Erro')
@@ -94,36 +84,61 @@ use Livewire\Attributes\On;
             Log::error('Mão de obra não encontrada em openCancelModal.', ['recordId' => $recordId]);
         }
     }
-    // Define the cancel action
+
+    // Method to open the add observation modal
+    #[On('openAddObservationModal')]
+    public function openAddObservationModal($recordId): void
+    {
+        if (empty($recordId)) {
+            Notification::make()
+                ->title('Erro')
+                ->body('ID do registro não fornecido.')
+                ->danger()
+                ->send();
+            return;
+        }
+
+        $this->selectedLaborForObservation = ServiceLabor::find($recordId);
+        if ($this->selectedLaborForObservation) {
+            // You might want to add checks here if observations are not allowed for certain statuses
+            // For example, if ($this->selectedLaborForObservation->status->value === TypeOfLaborStatus::cancelado->value) { ... }
+            $this->mountAction('addObservation');
+        } else {
+            Notification::make()
+                ->title('Erro')
+                ->body('Mão de obra não encontrada para adicionar observação.')
+                ->danger()
+                ->send();
+            Log::error('Mão de obra não encontrada em openAddObservationModal.', ['recordId' => $recordId]);
+        }
+    }
+
     public function cancelLabor(): Action
     {
         return Action::make('cancelLabor')
             ->label('Cancelar Mão de Obra')
-            ->record(fn() => $this->selectedLaborForAction) // Passa o registro selecionado para o modal
+            ->record(fn() => $this->selectedLaborForAction)
             ->modalHeading('Cancelar Mão de Obra')
             ->form([
                 Placeholder::make('cancellation_reason_title')
-                    ->label('') // sem título
-                    ->content('Motivo do Cancelamento'), 
+                    ->label('')
+                    ->content('Motivo do Cancelamento'),
                 RichEditor::make('cancellation_description')
                     ->label('Descrição Detalhada')
                     ->required()
                     ->columnSpanFull(),
             ])
-            ->action(function (array $data, ServiceLabor $record) { // $record é passado automaticamente
-                // 1. criar uma observação
+            ->action(function (array $data, ServiceLabor $record) {
                 Observation::create([
                     'service_labor_id' => $record->id,
-                    'order_id' => $record->order_id,     
-                    'service_id' => $record->service_id,   
+                    'order_id' => $record->order_id,
+                    'service_id' => $record->service_id,
                     'user_id' => Auth::id(),
-                    'title' => 'Mão de obra cancelada', 
+                    'title' => 'Mão de obra cancelada',
                     'description' => $data['cancellation_description'],
                 ]);
 
-                // 2. atualizar o status da mão de obra
-                
-                $record->status = TypeOfLaborStatus::cancelado->value; 
+                $record->status = TypeOfLaborStatus::cancelado->value;
                 $record->save();
 
                 Notification::make()
@@ -131,20 +146,57 @@ use Livewire\Attributes\On;
                     ->body('A mão de obra foi marcada como cancelada.')
                     ->success()
                     ->send();
-
-             
-                $this->dispatch('$refresh'); 
-               
-
+                $this->dispatch('$refresh');
             })
             ->modalSubmitActionLabel('Confirmar Cancelamento')
-            ->modalWidth('xl'); 
+            ->modalWidth('xl');
     }
+
+    // Define the add observation action
+    public function addObservation(): Action
+    {
+        return Action::make('addObservation')
+            ->label('Adicionar Observação')
+            ->record(fn() => $this->selectedLaborForObservation) // Pass the selected record to the modal
+            ->modalHeading('Adicionar Nova Observação')
+            ->form([
+                TextInput::make('observation_title')
+                    ->label('Título da Observação')
+                    ->required()
+                    ->maxLength(255),
+                RichEditor::make('observation_description')
+                    ->label('Descrição da Observação')
+                    ->required()
+                    ->columnSpanFull(),
+            ])
+            ->action(function (array $data, ServiceLabor $record) { // $record is passed automatically
+                Observation::create([
+                    'service_labor_id' => $record->id,
+                    'order_id' => $record->order_id,
+                    'service_id' => $record->service_id,
+                    'user_id' => Auth::id(), // Current logged-in user
+                    'title' => $data['observation_title'],
+                    'description' => $data['observation_description'],
+                ]);
+
+                Notification::make()
+                    ->title('Observação Adicionada')
+                    ->body('A observação foi adicionada com sucesso.')
+                    ->success()
+                    ->send();
+
+                $this->dispatch('$refresh'); // Refresh the Kanban board to show new observation (if displayed directly) or just to update data
+            })
+            ->modalSubmitActionLabel('Salvar Observação')
+            ->modalWidth('xl');
+    }
+
 
     protected function getFormActions(): array
     {
         return [
             $this->cancelLabor(),
+            $this->addObservation(), // Add the new action here
         ];
     }
 
@@ -158,12 +210,11 @@ use Livewire\Attributes\On;
         $actions[] = Action::make('filterForm')
             ->label('Filtrar')
             ->form([
-                Select::make('selectedOrderNumber') // Mudado para selectedOrderId para clareza, mas o nome do campo permanece selectedOrderNumber para compatibilidade
+                Select::make('selectedOrderNumber')
                     ->label('Número de Ordem')
                     ->options(
-                        // Mantém a busca por ID, mas exibe o número da ordem e outros detalhes
                         Order::select(['id', 'order_number', 'client_id', 'vehicle_id'])
-                            ->with(['client:id,name', 'vehicle:id,factory,model']) // Otimizar carregamento
+                            ->with(['client:id,name', 'vehicle:id,factory,model'])
                             ->get()
                             ->mapWithKeys(function ($order) {
                                 return [$order->id => $order->getFormattedTitleAttribute()];
@@ -197,7 +248,6 @@ use Livewire\Attributes\On;
                 $this->selectedDepartment = $data['selectedDepartment'] ?? null;
             });
 
-        // Condição para exibir o botão "Adicionar Mão de Obra ao Serviço"
 
         $canShowAddLaborButton = Service::where('status', TypeOfServiceStatus::pendente->value)
             ->where('user_id', $userId)
@@ -281,10 +331,9 @@ use Livewire\Attributes\On;
                         ->label('Observações para esta Mão de Obra no Serviço (Opcional)')
                         ->rows(3),
                 ])
-                ->action(function (array $data) use ($userId) { // Passar $userId para a action
+                ->action(function (array $data) use ($userId) {
                     $service = Service::find($data['service_id']);
 
-                    // Validação adicional para garantir que o serviço pertence ao usuário logado e está pendente
                     if (!$service || $service->user_id !== $userId || $service->status->value !== TypeOfServiceStatus::pendente->value) {
                         Notification::make()
                             ->title('Erro de Validação')
@@ -298,7 +347,7 @@ use Livewire\Attributes\On;
                         'order_id' => $service->order_id,
                         'service_id' => $data['service_id'],
                         'labor_id' => $data['labor_id'],
-                        'user_id' => $userId, // Usuário logado (quem está adicionando a mão de obra)
+                        'user_id' => $userId,
                         'description' => $data['description'],
                         'status' => TypeOfLaborStatus::Aguardando_aprovacao->value,
                         'includedAt' => now(),
@@ -325,11 +374,6 @@ use Livewire\Attributes\On;
     protected static string $model = ServiceLabor::class;
     protected static string $statusEnum = TypeOfLaborStatus::class;
 
-    // ... (restante da classe ServiceLaborBoard como antes) ...
-    // Certifique-se de que o método records() também respeite a lógica de visualização de dados,
-    // embora o Kanban em si mostre ServiceLabors, a criação é que está sendo refinada aqui.
-    // A lógica de filtros globais no records() deve permanecer como está ou ser ajustada
-    // conforme a necessidade geral de visualização do Kanban.
 
     protected function records(): \Illuminate\Support\Collection
     {
@@ -338,10 +382,10 @@ use Livewire\Attributes\On;
             'labor',
             'service.order.client',
             'service.part',
-            'service.department',
+            'service.department', // Eager load department via service
             'order.client',
             'service.user',
-            'observations',
+            'observations', // Eager load observations to display them
         ]);
 
         $hasFilters = !empty($this->selectedOrderNumber) ||
@@ -350,9 +394,10 @@ use Livewire\Attributes\On;
             (!empty($this->selectedOrderAndDepartment_order_number) && !empty($this->selectedOrderAndDepartment_department));
 
         if (!$hasFilters) {
-            // Se você quiser que o Kanban principal também filtre por padrão para o usuário logado (ex: apenas suas mãos de obra)
-            // $query->where('user_id', $userId); // Ou se ServiceLabor tem user_id referente ao executor
-            // ou $query->whereHas('service', fn($q) => $q->where('user_id', $userId)); // Se a lógica for mostrar SL de serviços do usuário
+            // Consider if you want default filtering for the logged-in user here
+            // Example: $query->where('user_id', $userId);
+            // or $query->whereHas('service.department.users', fn($q) => $q->where('user_id', $userId));
+            // For now, returning all records if no filter is applied.
             return $query->get();
         }
 
@@ -366,11 +411,13 @@ use Livewire\Attributes\On;
             });
         }
 
+        // Updated to correctly filter by department through the service relationship
         if ($this->selectedDepartment) {
             $query->whereHas('service', function ($subQuery) {
                 $subQuery->where('department_id', $this->selectedDepartment);
             });
         }
+
 
         if ($this->selectedOrderAndDepartment_order_number && $this->selectedOrderAndDepartment_department) {
             $orderNumberForFilter = $this->selectedOrderAndDepartment_order_number;

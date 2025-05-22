@@ -43,12 +43,13 @@ enum TypeOfLaborStatus: string implements HasLabel, HasIcon, HasColor
     public function getStyle(): string
     {
         return match ($this) {
-            self::pendente => 'style="color: #854d0e; font-size: small"',
-            self::Aguardando_aprovacao => 'style="color: #854d0e; font-size: small"',
-            self::aprovado => 'style=" color: #065f46; font-size: small"',           
-            self::em_andamento => 'style="color: #1e40af; font-size: small"',  
-            self::cancelado => 'style=" color: #1f2937; font-size: small"',          
-            self::finalizado => 'style="color: #065f46;font-size: small"',
+            self::pendente => 'style="padding:3px; background-color:#FFF; border-radius:4px; color: #854d0e; font-size: small"',
+            self::Aguardando_aprovacao => 'style="padding:3px; background-color:#FFF; border-radius:4px; color: #854d0e; font-size: small"',
+            self::aprovado => 'style="padding:3px; background-color:#FFF; border-radius:4px; color: #065f46; font-size: small"',           
+            self::em_andamento => 'style="padding:3px; background-color:#FFF; border-radius:4px; color: #1e40af; font-size: small"',  
+            self::cancelado => 'style="padding:3px; background-color:#FFF; border-radius:4px; color:rgb(229, 17, 63); font-size: small"',          
+            self::finalizado => 'style="padding:3px; background-color:#FFF; border-radius:4px; color: #065f46;font-size: small"',
+            self::CANCELLED => 'style="padding:3px; background-color:#FFF; border-radius:4px; color:rgb(229, 17, 63); font-size: small"',
         };
     }
     public function getColor(): string
@@ -58,7 +59,8 @@ enum TypeOfLaborStatus: string implements HasLabel, HasIcon, HasColor
             self::aprovado => '#065f46',            
             self::em_andamento => '#1e40af',  
             self::cancelado => '#1f2937',      
-            self::finalizado => '#1f2937',
+            self::finalizado => '#065f46',
+            self::Aguardando_aprovacao => '#854d0e',
         };
     }
 

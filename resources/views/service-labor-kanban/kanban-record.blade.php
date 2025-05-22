@@ -1,3 +1,4 @@
+{{-- kanban-record.blade.php --}}
 <div
     id="{{ $record->getKey() }}"
     wire:click="recordClicked('{{ $record->getKey() }}', {{ @json_encode($record) }})"
@@ -15,30 +16,37 @@
         @endif
 
         @php
-        // Assuming $record->status->value exists and contains strings like 'Aprovado', 'Pendente', 'Finalizado'
-        // Also assuming $record->order, $record->part, $record->user_id, $record->department, $record->labor exist
-        // and have the necessary properties and relationships as used in 'kanban-record.blade - Copia.php'.
-        // You might need to adjust these based on your actual data structure.
+        $statusEnum=null;
+        if ($record->status instanceof \App\Enums\TypeOfLaborStatus) {
+        $statusEnum = $record->status;
+        } elseif (is_string($record->status) && class_exists(\App\Enums\TypeOfLaborStatus::class)) {
+        try {
+        $statusEnum = \App\Enums\TypeOfLaborStatus::from($record->status);
+        } catch (\ValueError $e) {
+        $statusEnum = null; // Or a default status
+        }
+        }
+
+        $statusStyle = $statusEnum ? $statusEnum->getStyle() : 'style="font-size: small"'; // Default style if enum case not found
+        $statusLabel = $statusEnum ? $statusEnum->getLabel() : ($record->status ?? 'N/A'); // Default label
+
 
         $statusColors = [
-        'Aprovado' => '#d4edda', // Greenish
-        'Aguardando Aprovação' => '#fff3cd', // Yellowish
-        'Pendente' => '#fff3cd', // Yellowish
-        'Cancelado' => '#f8d7da', // Reddish
-        'Finalizado' => '#d1ecf1', // Bluish
-        // Add other statuses and their colors here
+        \App\Enums\TypeOfLaborStatus::aprovado->value => '#d4edda', // Greenish
+        \App\Enums\TypeOfLaborStatus::Aguardando_aprovacao->value => '#fff3cd', // Yellowish
+        \App\Enums\TypeOfLaborStatus::pendente->value => '#fff3cd', // Yellowish
+        \App\Enums\TypeOfLaborStatus::cancelado->value => '#f8d7da', // Reddish
+        \App\Enums\TypeOfLaborStatus::finalizado->value => '#d1ecf1', // Bluish
+        // Add em_andamento if you have a specific color for it, or it will default
         ];
-        $currentStatus = $record->status ?? 'Pendente'; // Default to 'Pendente' if status is not set
-        $backgroundColor = $statusColors[$currentStatus] ?? '#FFFFFF'; // Default to white if status color is not found
+        // Ensure $record->status is the enum object or its value
+        $currentStatusValue = $record->status instanceof \App\Enums\TypeOfLaborStatus ? $record->status->value : $record->status;
+        $backgroundColor = $statusColors[$currentStatusValue] ?? '#FFFFFF'; // Default to white if status color is not found
+
         @endphp
 
         style="background-color: {{ $backgroundColor }}; border-radius: 12px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); margin-bottom: 12px;"
         >
-        {{-- This line was in the original, displaying a title. You might want to integrate it differently or remove it
-         if the new structure handles the title sufficiently.
-    {{ $record->{static::$recordTitleAttribute} }}
-        --}}
-
         <div x-data="{ open: false }" style="
         padding: 12px;
         font-family: Arial, sans-serif;
@@ -58,12 +66,15 @@
                 <span style="margin: 0 5px; color: #555; text-align: center; flex-grow: 1;">
                     {{ $record->service->part->title ?? ($record->part->title ?? 'N/A') }}
                 </span>
+
                 <svg :class="{ 'rotate-180': open }" class="w-5 h-5 transition-transform duration-300 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                 </svg>
             </h3>
 
             <div x-show="open" x-transition class="mt-3 text-sm text-gray-700 space-y-2">
+
+                <strong>Status: </strong><span {!! $statusStyle !!}>{{ $statusLabel }}</span>
 
                 <p style="margin: 8px 0; color: #555;">
                     <strong>Cliente:</strong> {{ $record->getOrderDetails->client->name ?? ($record->order->client->name ?? 'N/A') }}
@@ -95,27 +106,25 @@
                     border: 1px solid #e0e0e0; /* Softer border */
                 ">
                         @php
-                        // Ensure $record->user_id and $record->department are available
-                        // You might need to fetch these if they are not directly on the $record object
                         $userId = $record->user_id ?? null;
-                        $departmentTitle = $record->department->title ?? ''; // Handle if department is not set
+                        $departmentTitle = $record->department->title ?? '';
                         @endphp
                         @if($userId && function_exists('app') && app()->has('userAvatar') && app()->has('userName'))
                         {!! app('userAvatar')($userId) !!}
                         <span style="
-                            margin-left: 8px;
-                            font-size: 14px;
-                            color: #2c3e50;
-                            font-weight: bold;
-                        ">
+                        margin-left: 8px;
+                        font-size: 14px;
+                        color: #2c3e50;
+                        font-weight: bold;
+                    ">
                             {{ app('userName')($userId) }} @if($departmentTitle) - {{ $departmentTitle }} @endif
                         </span>
                         @else
                         <span style="
-                            font-size: 14px;
-                            color: #7f8c8d; /* Softer color for placeholder text */
-                            font-style: italic;
-                        ">
+                        font-size: 14px;
+                        color: #7f8c8d; /* Softer color for placeholder text */
+                        font-style: italic;
+                    ">
                             Usuário não atribuído
                         </span>
                         @endif
@@ -137,8 +146,6 @@
                             <p style="margin: 6px 0; font-weight: 600;">
                                 <span style="color: #555;">Descrição:</span>
                             </p>
-
-
                             <div style="border-radius: 6px; padding: 10px; margin-left: 10px; font-size: 13px; line-height: 1.5; color: #444;">
                                 {!! htmlspecialchars($record->description) !!}
                             </div>
@@ -147,11 +154,10 @@
 
                         @if(isset($record->observations))
                         <div style="margin-top: 10px; padding-top: 5px; border-top: 1px solid #DDD;">
-                            <h6 style="font-weight: bold; color: #444; margin-bottom: 8px; font-size: 13px;">
-                                Observações da Mão de Obra:
-                            </h6>
                             @foreach($record->observations as $observation)
-
+                            <h6 style="font-weight: bold; color: #444; margin-bottom: 8px; font-size: 13px;">
+                                Observações:
+                            </h6>
                             <div style="background-color: rgba(230,230,230,0.5); border: 1px solid #ccc; padding: 8px 10px; border-radius: 5px; margin-bottom: 8px; font-size: 12px;">
                                 <p style="font-weight: bold; margin: 0 0 4px 0; color: #333; font-size: 12.5px;">{{ $observation->title }}</p>
                                 <p style="margin: 0; color: #555; line-height: 1.4;">{!! $observation->description !!}</p>
@@ -185,32 +191,72 @@
 
                         @if($record->startedAt)
                         <p style="font-size:x-small; margin-top: 6px; margin-left: 10px;">
-                            <span style=" font-weight: bold;">Iniciado em:</span> {{\Carbon\Carbon::parse($record->starteddAt)->format('d/m/Y - H:i') ?? 'N/A'}}
+                            <span style=" font-weight: bold;">Iniciado em:</span> {{\Carbon\Carbon::parse($record->starteddAt)->format('d/m/Y - H:i') ?? 'N/A'}} {{-- Corrected typo from starteddAt to startedAt --}}
                         </p>
                         @endif
-
 
                         @if($record->finishedAt)
                         <p style="font-size:x-small; margin-top: 6px; margin-left: 10px;">
                             <span style=" font-weight: bold;">Finalizado em:</span> {{\Carbon\Carbon::parse($record->finishedAt)->format('d/m/Y - H:i') ?? 'N/A'}}
                         </p>
                         @endif
+
+                    </div>
+                    {{-- Action Buttons Container --}}
+                    <div style="margin-top: 10px; text-align: right; ">
+                        <button
+                            type="button"
+                            style="
+                                background-color: rgb(59 130 246); /* Blue */
+                                color: #fff;
+                                border: none;
+                                border-radius: 8px;
+                                padding: 6px 12px;
+                                display: inline-flex;
+                                align-items: center;
+                                gap: 6px;
+                                font-size: 14px;
+                                cursor: pointer;
+                            "
+                            wire:click.stop="openAddObservationModal('{{ $record->getKey() }}')"
+                            aria-label="Adicionar Observação">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 18px; height: 18px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                            </svg>
+                            Adicionar Observação
+                        </button>
+
+
+                        @if($record->status !== \App\Enums\TypeOfLaborStatus::cancelado->value)
                         <div style="margin-top: 10px; text-align: right;">
                             <button
                                 type="button"
-                                wire:click.stop="openCancelModal('{{ $record->getKey() }}')"
-                                class="filament-button filament-button-size-sm filament-button-color-danger 
-       px-3 py-1 text-xs font-medium rounded-md transition 
-       hover:bg-danger-600 focus:outline-none focus:ring-2 focus:ring-danger-500"
+                                style="
+            background-color:rgb(246, 143, 131);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        " wire:click.stop="openCancelModal('{{ $record->getKey() }}')"
                                 aria-label="Cancelar Mão de Obra">
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                    fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor"
+                                    style="width: 18px; height: 18px;">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M6 18L18 6M6 6l12 12" />
+                                </svg>
                                 Cancelar Mão de Obra
                             </button>
                         </div>
-
-
+                        @endif
                     </div>
                 </div>
-
             </div>
         </div>
 </div>
