@@ -13,7 +13,7 @@
        // Define o valor do status "Cancelado" para ser usado no JavaScript
     // Isso garante que estamos usando o mesmo valor definido no Enum PHP.
     const canceladoStatusValue = '{{ \App\Enums\TypeOfLaborStatus::cancelado->value }}';
-    const finalizadoStatusValue = '{{ \App\Enums\TypeOfLaborStatus::finalizado->value }}'; 
+    const finalizadoStatusValue = '{{ \App\Enums\TypeOfLaborStatus::finalizado->value }}'; // Adicione esta linha
     
     function onAdd(e) { // Chamado quando o item é solto em uma NOVA lista DIFERENTE
         const recordId = e.item.id;
