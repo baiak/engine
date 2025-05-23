@@ -13,6 +13,7 @@
        // Define o valor do status "Cancelado" para ser usado no JavaScript
     // Isso garante que estamos usando o mesmo valor definido no Enum PHP.
     const canceladoStatusValue = '{{ \App\Enums\TypeOfLaborStatus::cancelado->value }}';
+    const finalizadoStatusValue = '{{ \App\Enums\TypeOfLaborStatus::finalizado->value }}'; 
     
     function onAdd(e) { // Chamado quando o item é solto em uma NOVA lista DIFERENTE
         const recordId = e.item.id;
@@ -79,7 +80,7 @@
 
                         // Se o item está sendo arrastado DA coluna "Cancelado"
                         // PARA QUALQUER OUTRA coluna que NÃO SEJA "Cancelado"
-                        if (fromStatus === canceladoStatusValue && toStatus !== canceladoStatusValue) {
+                        if (fromStatus === canceladoStatusValue || fromStatus === finalizadoStatusValue && toStatus !== canceladoStatusValue) {
                             console.log('Movimentação bloqueada: Não é possível mover um item "Cancelado" para outro status.');
                             return false; // Impede a movimentação
                         }

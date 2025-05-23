@@ -227,7 +227,7 @@
                         </button>
 
 
-                        @if($record->status !== \App\Enums\TypeOfLaborStatus::cancelado->value)
+                        @if($record->status !== \App\Enums\TypeOfLaborStatus::cancelado->value || $record->status !== \App\Enums\TypeOfLaborStatus::finalizado->value)
                         <div style="margin-top: 10px; text-align: right;">
                             <button
                                 type="button"

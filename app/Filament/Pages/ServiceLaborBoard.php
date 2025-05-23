@@ -108,7 +108,7 @@ use Livewire\Attributes\On;
         $originalStatus = $record->{$statusColumn}; 
     
         // Comparações e atualizações devem usar os valores sanitizados/convertidos
-        if ($originalStatus === TypeOfLaborStatus::cancelado->value && $safeNewStatus !== TypeOfLaborStatus::cancelado->value) {
+        if ($originalStatus === TypeOfLaborStatus::cancelado->value && $safeNewStatus !== TypeOfLaborStatus::cancelado->value || $originalStatus === TypeOfLaborStatus::finalizado->value) {
             Notification::make()
                 ->title('Ação Não Permitida')
                 ->body('Uma mão de obra cancelada não pode ter seu status alterado para outro.')
