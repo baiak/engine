@@ -95,10 +95,11 @@ class ServiceLabor extends Model
 
 
 
-    public function user(): HasOneOrMany
+    public function user()
     {
-        return $this->hasOne(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
+
     public function impediments()
     {
         return $this->hasMany(LaborImpediment::class);

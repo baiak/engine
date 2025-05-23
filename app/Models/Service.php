@@ -111,6 +111,12 @@ class Service extends Model implements Sortable
     {
         return $this->belongsTo(ServiceLabor::class);
     }
+
+    public function serviceLabors()
+    {
+        return $this->hasMany(ServiceLabor::class);
+    }
+
     public function serviceAuditLog(): HasOne
     {
         return $this->hasOne(ServiceAuditLog::class);

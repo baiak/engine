@@ -6,6 +6,13 @@ use App\Enums\TypeOfServiceStatus;
 use App\Enums\TypeOfLaborStatus; 
 use App\Models\Department;
 use App\Models\Order;
+use App\Models\Observation;
+use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\Placeholder;
+use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Auth;
+use Filament\Actions\Contracts\HasActions;
+use Filament\Actions\Concerns\InteractsWithActions;
 use App\Models\Service;
 use App\Models\ServiceLabor;
 use App\Models\User;
@@ -15,8 +22,9 @@ use Filament\Forms\Components\Select;
 use Mokhosh\FilamentKanban\Pages\KanbanBoard;
 use Livewire\Attributes\On;
 
-class ServicesKanbanBoard extends KanbanBoard
+class ServicesKanbanBoard extends KanbanBoard implements HasActions 
 {
+    use InteractsWithActions; 
     protected static string $model = Service::class;
     protected static string $statusEnum = TypeOfServiceStatus::class;
     protected static string $recordTitleAttribute = 'formatted_title';
@@ -41,6 +49,10 @@ class ServicesKanbanBoard extends KanbanBoard
     protected $listeners = [
         'laborStatusUpdated' => 'refreshRecord',
     ];
+
+    public ?ServiceLabor $selectedLaborForCancellation = null; // Added
+    public $recordIdForCancellation = null; // Added: To store the Service (parent record) ID for refreshing the card
+
 
     protected function getHeaderActions(): array
     {
@@ -193,32 +205,46 @@ class ServicesKanbanBoard extends KanbanBoard
 
     protected function records(): \Illuminate\Support\Collection
     {
+        // Ensuring eager loading for display and potential filtering needs
+        $query = Service::with([
+            'order.client',
+            'order.vehicle',
+            'department',
+            'user', // Assuming Service has a direct user_id for the person responsible for the service itself
+            'part',
+            'serviceLabors.labor', // Eager load labors within service
+            'serviceLabors.user',  // Eager load user assigned to the labor
+            'serviceLabors.observations' // Eager load observations for each labor
+        ]);
+
+
         if (
             empty($this->selectedOrderNumber) &&
             empty($this->selectedDepartment) &&
             (empty($this->selectedOrderAndDepartment_order_number) || empty($this->selectedOrderAndDepartment_department))
         ) {
-            return Service::all();
+            // Removed Service::all() to apply eager loading by default.
+            return $query->get();
         }
 
-        $query = Service::query();
 
-        // Filtro por número de ordem
         if ($this->selectedOrderNumber) {
             $query->where('order_number', $this->selectedOrderNumber);
         }
 
-        // Filtro por departamento
         if ($this->selectedDepartment) {
             $query->where('department_id', $this->selectedDepartment);
-            
-            // Se tiver usuário selecionado, filtra pelos serviços desse usuário
             if ($this->selectedDepartmentUser) {
-                $query->where('user_id', $this->selectedDepartmentUser);
+                // If filtering by user responsible for the Service itself
+                // $query->where('user_id', $this->selectedDepartmentUser);
+
+                // If filtering Services that have at least one ServiceLabor assigned to this user
+                 $query->whereHas('serviceLabors', function ($q) {
+                     $q->where('user_id', $this->selectedDepartmentUser);
+                 });
             }
         }
 
-        // Filtro por ordem e departamento combinados
         if ($this->selectedOrderAndDepartment_order_number && $this->selectedOrderAndDepartment_department) {
             $query->where('order_number', $this->selectedOrderAndDepartment_order_number)
                   ->where('department_id', $this->selectedOrderAndDepartment_department);
@@ -293,44 +319,132 @@ class ServicesKanbanBoard extends KanbanBoard
         return '<div class="inline-block text-sm text-gray-600 dark:text-gray-300">Exibindo todos os serviços de todas as ordens</div>';
     }
 
-    public function updateLaborStatus($serviceLaborId, $newStatus, $recordId)
+    public function updateLaborStatus($serviceLaborId, $newStatus, $recordId) // recordId is the Service ID
     {
         $serviceLabor = ServiceLabor::find($serviceLaborId);
 
-        if ($serviceLabor) {
+        if (!$serviceLabor) {
+            $this->dispatch('notify', message: 'Erro: Mão de obra não encontrada.', type: 'danger');
+            return;
+        }
+
+        $originalStatusValue = $serviceLabor->status;
+
+        // Rule 1: Cannot change a 'cancelado' labor to any other status.
+        if ($originalStatusValue === TypeOfLaborStatus::cancelado->value && $newStatus !== TypeOfLaborStatus::cancelado->value) {
+            Notification::make()
+                ->title('Ação Não Permitida')
+                ->body('Uma mão de obra cancelada não pode ter seu status alterado para outro.')
+                ->warning()
+                ->send();
+            $this->dispatch('laborStatusUpdated', recordId: $recordId)->self(); // Revert dropdown by refreshing the card
+            return;
+        }
+
+        // Rule 2: Cannot change a 'finalizado' labor to any other status.
+        // This also implicitly prevents a 'finalizado' labor from being 'cancelado'.
+        if ($originalStatusValue === TypeOfLaborStatus::finalizado->value && $newStatus !== TypeOfLaborStatus::finalizado->value) {
+             Notification::make()
+                ->title('Ação Não Permitida')
+                ->body('Uma mão de obra finalizada não pode ter seu status alterado.')
+                ->warning()
+                ->send();
+            $this->dispatch('laborStatusUpdated', recordId: $recordId)->self(); // Revert dropdown
+            return;
+        }
+
+        // If the new status is 'cancelado'
+        if ($newStatus === TypeOfLaborStatus::cancelado->value) {
+            // If it's already 'cancelado' and user selects 'cancelado' again, do nothing.
+            if ($originalStatusValue === TypeOfLaborStatus::cancelado->value) {
+                return;
+            }
+
+            $this->selectedLaborForCancellation = $serviceLabor;
+            $this->recordIdForCancellation = $recordId;
+            $this->mountAction('cancelLaborOnServiceCard');
+        } else {
             try {
-                $statusEnum = TypeOfLaborStatus::from($newStatus); // Valida se o status existe no Enum
+                $statusEnum = TypeOfLaborStatus::from($newStatus);
                 $serviceLabor->status = $statusEnum;
+                 if ($statusEnum === TypeOfLaborStatus::em_andamento && is_null($serviceLabor->startedAt)) {
+                 $serviceLabor->startedAt = now();
+                }
+                if ($statusEnum === TypeOfLaborStatus::finalizado && is_null($serviceLabor->finishedAt)) {
+                $serviceLabor->finishedAt = now();
+                }
                 $serviceLabor->save();
 
-                // Dispara um evento para que o Alpine possa atualizar a interface se necessário,
-                // ou para que o próprio Livewire possa re-renderizar partes específicas.
-                // O $this->dispatch('laborStatusUpdated', recordId: $serviceLabor->service_id) pode ser usado
-                // se a atualização do status da mão de obra deve refletir no card de serviço (Service).
-                // Se você só quer que o status no item da lista seja atualizado visualmente pelo Alpine,
-                // a chamada $wire já faz isso no Blade.
-
-                // Se a mudança no status da mão de obra pode alterar o status do serviço principal,
-                // você pode recalcular o status do serviço aqui e então:
-                // $this->dispatch('refreshKanbanRecord'); // Atualiza todo o card.
-                // Ou, se tiver um método específico para atualizar apenas o record:
-                // $this->dispatch('recordUpdated', id: $recordId);
-
-                // Para este caso, vamos assumir que queremos apenas notificar que foi atualizado,
-                // e o Alpine já cuidou da parte visual imediata do status da mão de obra.
-                // Se o card principal (Service) precisa ser re-renderizado devido a essa mudança:
-                $this->dispatch('laborStatusUpdated', recordId: $recordId)->self(); // Notifica o próprio componente para se atualizar
+                $this->dispatch('laborStatusUpdated', recordId: $recordId)->self();
                 $this->dispatch('notify', message: 'Status da mão de obra atualizado com sucesso!', type: 'success');
-
-
             } catch (\ValueError $e) {
-                // Lidar com o caso de um valor de status inválido
                 $this->dispatch('notify', message: 'Erro: Status inválido selecionado.', type: 'danger');
             }
-        } else {
-            $this->dispatch('notify', message: 'Erro: Mão de obra não encontrada.', type: 'danger');
         }
     }
+
+        // Action to handle the cancellation with observation
+        public function cancelLaborOnServiceCard(): Action
+        {
+            return Action::make('cancelLaborOnServiceCard')
+                ->label('Cancelar Mão de Obra')
+                ->record(fn() => $this->selectedLaborForCancellation)
+                ->modalHeading('Confirmar Cancelamento de Mão de Obra')
+                ->form([
+                    Placeholder::make('cancellation_info')
+                        ->label('')
+                        ->content(function (?ServiceLabor $record) {
+                            if (!$record) return 'Mão de obra não selecionada.';
+                            return "Você está cancelando a mão de obra: \"{$record->labor->title}\" associada ao serviço da ordem nº \"{$record->order->order_number}\".";
+                        }),
+                    RichEditor::make('cancellation_description')
+                        ->label('Motivo do Cancelamento')
+                        ->required()
+                        ->columnSpanFull(),
+                ])
+                ->action(function (array $data, ServiceLabor $record) {
+                    Observation::create([
+                        'service_labor_id' => $record->id,
+                        'order_id' => $record->order_id,
+                        'service_id' => $record->service_id,
+                        'user_id' => Auth::id(),
+                        'title' => 'Mão de obra cancelada',
+                        'description' => $data['cancellation_description'],
+                    ]);
+    
+                    $record->status = TypeOfLaborStatus::cancelado->value;
+                    $record->save();
+    
+                    Notification::make()
+                        ->title('Mão de Obra Cancelada')
+                        ->body('A mão de obra foi marcada como cancelada.')
+                        ->success()
+                        ->send();
+    
+                    // Refresh the specific service card where this labor belongs
+                    if ($this->recordIdForCancellation) {
+                        $this->dispatch('laborStatusUpdated', recordId: $this->recordIdForCancellation)->self();
+                    } else {
+                        $this->dispatch('$refresh'); // Fallback to full refresh
+                    }
+                    $this->selectedLaborForCancellation = null; // Clear selection
+                    $this->recordIdForCancellation = null;
+                })
+                ->modalCancelActionLabel('Voltar')
+                ->modalSubmitActionLabel('Confirmar Cancelamento')
+                ->modalWidth('xl');
+        }
+
+        
+    // Register the action so mountAction can find it
+    protected function getFormActions(): array
+    {
+        return [
+            $this->cancelLaborOnServiceCard(),
+            // ... any other actions that might be mounted ...
+        ];
+    }
+
 
     #[On('laborStatusUpdated')]
     public function refreshRecord($recordId): void
