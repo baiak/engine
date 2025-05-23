@@ -52,6 +52,85 @@ use Livewire\Attributes\On;
     public ?ServiceLabor $selectedLaborForAction = null;
     public ?ServiceLabor $selectedLaborForObservation = null; // Property to hold the record for adding observation
 
+        /**
+     * Define o nome da coluna do banco de dados que armazena o status dos registros do Kanban.
+     *
+     * @return string
+     */
+    protected function getStatusColumn(): string
+    {
+        // Substitua 'status' pelo nome real da sua coluna de status no banco de dados,
+        // se for diferente. Se for 'status', mantenha como está.
+        return 'status';
+    }
+
+     /**
+     * Sobrescreve o método statusChanged para adicionar lógica de bloqueio
+     * para itens cancelados.
+     * Este método é chamado pelo Livewire quando o evento 'status-changed' é recebido.
+     */
+    #[On('status-changed')]
+    public function statusChanged($recordId, $status, $fromOrderedIds = [], $toOrderedIds = []): void
+    {
+        $newStatus = $status;
+  
+        $fromOrderedIds = is_array($fromOrderedIds) ? $fromOrderedIds : [];
+        $toOrderedIds = is_array($toOrderedIds) ? $toOrderedIds : [];
+    
+
+        $safeRecordId = (string) $recordId;
+        $safeNewStatus = (string) $newStatus;
+
+        $modelClass = static::$model;
+        if (!class_exists($modelClass)) {
+            Notification::make()
+                ->title('Erro de Configuração')
+                ->body("A classe do modelo '{$modelClass}' não foi encontrada.")
+                ->danger()
+                ->send();
+            $this->dispatch('$refresh');
+            return;
+        }
+    
+        $record = $modelClass::find($safeRecordId);
+    
+        if (!$record) {
+            Notification::make()
+                ->title('Erro')
+                ->body('Registro não encontrado.')
+                ->danger()
+                ->send();
+            $this->dispatch('$refresh');
+            return;
+        }
+    
+        $statusColumn = $this->getStatusColumn();
+        $originalStatus = $record->{$statusColumn}; 
+    
+        // Comparações e atualizações devem usar os valores sanitizados/convertidos
+        if ($originalStatus === TypeOfLaborStatus::cancelado->value && $safeNewStatus !== TypeOfLaborStatus::cancelado->value) {
+            Notification::make()
+                ->title('Ação Não Permitida')
+                ->body('Uma mão de obra cancelada não pode ter seu status alterado para outro.')
+                ->warning()
+                ->send();
+            $this->dispatch('$refresh');
+            return;
+        }
+    
+        $record->update([$statusColumn => $safeNewStatus]);
+    
+
+        if (method_exists($this, 'onStatusChanged')) {
+            $this->onStatusChanged(
+                $safeRecordId,      // Garante que é string
+                $safeNewStatus,     // Garante que é string
+                $fromOrderedIds,    // Já garantido como array
+                $toOrderedIds       // Já garantido como array
+            );
+        }
+    }
+
     #[On('openCancelLaborModal')]
     public function openCancelModal($recordId): void
     {

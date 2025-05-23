@@ -14,28 +14,35 @@
     // Isso garante que estamos usando o mesmo valor definido no Enum PHP.
     const canceladoStatusValue = '{{ \App\Enums\TypeOfLaborStatus::cancelado->value }}';
     
-    function onAdd(e) {
+    function onAdd(e) { // Chamado quando o item é solto em uma NOVA lista DIFERENTE
         const recordId = e.item.id;
-        console.log('Disparando openCancelLaborModal com recordId:', recordId, 'Tipo:', typeof recordId); // Adicione esta linha
-        const newStatus = e.to.dataset.statusId; // O ID do status da coluna de destino (e.g., 'cancelado')
-        const fromList = e.from; // A lista de origem
-        const item = e.item; // O item (card) que foi movido
-        const oldIndex = e.oldDraggableIndex; // O índice original do item na lista de origem
+        const newStatus = e.to.dataset.statusId;
+        const fromList = e.from;
+        const item = e.item;
+        const oldIndex = e.oldDraggableIndex;
 
+        console.log('onAdd - recordId:', recordId, 'newStatus:', newStatus, 'fromStatus:', fromList.dataset.statusId);
+
+        // Esta lógica é para INICIAR um cancelamento (arrastar um item NÃO cancelado para a coluna "Cancelado")
+        // O onMove já terá permitido esta ação (pois fromStatus não era 'cancelado').
         if (newStatus === canceladoStatusValue) {
-            // Se o card foi movido para a coluna "Cancelado":
-            // 1. Reverta a mudança visual no DOM.
-            //    SortableJS já moveu o item para e.to. Precisamos movê-lo de volta para e.from.
-            fromList.insertBefore(item, fromList.children[oldIndex]);
-
-            // 2. Dispare o evento Livewire para abrir o modal de cancelamento.
-            //    O ServiceLaborBoard.php já escuta 'openCancelLaborModal'.
-            Livewire.dispatch('openCancelLaborModal', [recordId]);
-            
-            // Importante: Não dispare 'status-changed' aqui, pois o modal
-            // e sua ação de confirmação cuidarão da atualização do status.
+            // Verifica se o item realmente veio de uma coluna diferente de "Cancelado"
+            // (embora onMove já devesse ter coberto isso para a lógica de "não sair de cancelado")
+            if (fromList.dataset.statusId !== canceladoStatusValue) {
+                console.log('Item movido PARA Cancelado. Revertendo visual e abrindo modal.');
+                fromList.insertBefore(item, fromList.children[oldIndex]); // Reverte o visual para o modal confirmar
+                // Usando o formato de array para recordId que resolveu o problema anterior
+                Livewire.dispatch('openCancelLaborModal', [recordId]);
+            } else {
+                // Se, por algum motivo, onAdd for chamado para um movimento de Cancelado para Cancelado
+                // (geralmente onUpdate lida com ordenação interna), tratamos como uma ordenação.
+                const toOrderedIds = [].slice.call(e.to.children).map(child => child.id);
+                Livewire.dispatch('sort-changed', {recordId, status: newStatus, orderedIds: toOrderedIds});
+            }
         } else {
-            // Comportamento padrão para outras mudanças de status:
+            // Comportamento para outras mudanças de status (ex: de 'Pendente' para 'Em Andamento')
+            // onMove já garantiu que não estamos vindo da coluna "Cancelado".
+            console.log('Item movido para uma coluna não-Cancelado. Despachando status-changed.');
             const fromOrderedIds = [].slice.call(fromList.children).map(child => child.id);
             const toOrderedIds = [].slice.call(e.to.children).map(child => child.id);
             Livewire.dispatch('status-changed', {recordId, status: newStatus, fromOrderedIds, toOrderedIds});
@@ -66,6 +73,23 @@
             onUpdate,
             setData,
             onAdd,
+            onMove: function (evt, originalEvent) {
+                        const fromStatus = evt.from.dataset.statusId; // Status da coluna de origem
+                        const toStatus = evt.to.dataset.statusId;     // Status da coluna de destino (onde o mouse está)
+
+                        // Se o item está sendo arrastado DA coluna "Cancelado"
+                        // PARA QUALQUER OUTRA coluna que NÃO SEJA "Cancelado"
+                        if (fromStatus === canceladoStatusValue && toStatus !== canceladoStatusValue) {
+                            console.log('Movimentação bloqueada: Não é possível mover um item "Cancelado" para outro status.');
+                            return false; // Impede a movimentação
+                        }
+
+                        // Permite todas as outras movimentações:
+                        // - De não-cancelado para não-cancelado
+                        // - De não-cancelado para cancelado (o onAdd vai pegar para abrir o modal)
+                        // - Ordenação dentro de qualquer coluna (incluindo a coluna "Cancelado")
+                        return true;
+                    }
         }))
     })
     document.addEventListener('laborStatusUpdated', event => {
