@@ -156,7 +156,7 @@
                         <div style="margin-top: 10px; padding-top: 5px; border-top: 1px solid #DDD;">
                             @foreach($record->observations as $observation)
                             <h6 style="font-weight: bold; color: #444; margin-bottom: 8px; font-size: 13px;">
-                                Observações:
+                                Observação:
                             </h6>
                             <div style="background-color: rgba(230,230,230,0.5); border: 1px solid #ccc; padding: 8px 10px; border-radius: 5px; margin-bottom: 8px; font-size: 12px;">
                                 <p style="font-weight: bold; margin: 0 0 4px 0; color: #333; font-size: 12.5px;">{{ $observation->title }}</p>
