@@ -6,6 +6,7 @@ use App\Enums\TypeOfLaborImpedimentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LaborImpediment extends Model
 {
@@ -28,6 +29,24 @@ class LaborImpediment extends Model
         'logs'=>'json',
 
     ];
+
+        // Relationship to the user who made the complaint
+        public function complainantUser(): BelongsTo
+        {
+            return $this->belongsTo(User::class, 'complainant_id');
+        }
+    
+        // Relationship to the user who is assigned/complained to
+        public function complainedUser(): BelongsTo
+        {
+            return $this->belongsTo(User::class, 'complained_id');
+        }
+    
+        // Relationship to the specific ServiceLabor entry
+        public function serviceLabor(): BelongsTo
+        {
+            return $this->belongsTo(ServiceLabor::class, 'service_labor_id');
+        }
 
     public static function listImpediments($serviceLaborId){
         return LaborImpediment::where('service_labor_id', $serviceLaborId)->orderBy('id', 'desc')->get();

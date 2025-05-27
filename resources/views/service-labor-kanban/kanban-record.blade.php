@@ -1,4 +1,3 @@
-{{-- kanban-record.blade.php --}}
 <div
     id="{{ $record->getKey() }}"
     wire:click="recordClicked('{{ $record->getKey() }}', {{ @json_encode($record) }})"
@@ -47,6 +46,7 @@
 
         style="background-color: {{ $backgroundColor }}; border-radius: 12px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); margin-bottom: 12px;"
         >
+        
         <div x-data="{ open: false }" style="
         padding: 12px;
         font-family: Arial, sans-serif;

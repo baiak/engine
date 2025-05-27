@@ -37,7 +37,7 @@ class ServiceLaborObserver
         $originalDatabaseStatus = $serviceLabor->getOriginal('status'); 
         $newProposedStatus = $serviceLabor->status;           
 
-        $protectedStatuses = ['Finalizado', 'Cancelado', 'Em Andamento'];
+        $protectedStatuses = ['Finalizado', 'Cancelado'];
 
         if (in_array($originalDatabaseStatus, $protectedStatuses) && $newProposedStatus !== $originalDatabaseStatus) {
             $serviceLabor->status = $originalDatabaseStatus;
@@ -72,7 +72,7 @@ class ServiceLaborObserver
         $allLabors = ServiceLabor::where('service_id', $serviceId)->get();
 
         // Define os status de mão de obra que permitem que o Serviço seja 'Aprovado'.
-        $permissibleLaborStatusesForServiceApproval = ['Cancelado', 'Aprovado', 'Em Andamento'];
+        $permissibleLaborStatusesForServiceApproval = ['Cancelado', 'Aprovado', 'Em Andamento', 'Finalizado'];
 
         $canServiceBeApprovedBasedOnLabors = null;
 
@@ -103,7 +103,7 @@ class ServiceLaborObserver
                 // Atualiza o status do serviço para 'Aprovado' e define a data de aprovação.
                 DB::table('services')
                     ->where('id', $serviceId)
-                    ->update(['status' => 'Aprovado', 'approvedAt' => Carbon::now()]);
+                    ->update(['status' => 'Aprovado']);
                 // Log::info("Service {$serviceId} status updated to Aprovado via ServiceLaborObserver@updated.");
             }
         } else {
@@ -113,7 +113,7 @@ class ServiceLaborObserver
                 // Também limpa a data de aprovação.
                 DB::table('services')
                     ->where('id', $serviceId)
-                    ->update(['status' => 'Pendente', 'approvedAt' =>  Carbon::now()]);
+                    ->update(['status' => 'Pendente']);
                 // Log::info("Service {$serviceId} status changed from Aprovado to Pendente via ServiceLaborObserver@updated because labor conditions not met.");
             }
         }

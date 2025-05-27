@@ -24,6 +24,8 @@ use Mokhosh\FilamentKanban\Pages\KanbanBoard;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\On; // Import the correct namespace for the On attribute
+use Illuminate\Validation\Rules\Unique; // Import the Unique rule
+use Carbon\Carbon; // Import the Carbon class for date handling
 
 class OrdersKanbanBoard extends KanbanBoard
 {
@@ -46,13 +48,17 @@ class OrdersKanbanBoard extends KanbanBoard
     {
         return [
             Action::make('createOrder')
-                ->label('Nova Ordem')
+                ->label('Nova ordem de serviço')
                 ->icon('heroicon-o-plus')
                 ->form([
                     TextInput::make('order_number')
                         ->required()
                         ->label('Número da Ordem')
-                        ->placeholder('Digite o número da ordem'),
+                        ->placeholder('Digite o número da ordem')
+                        ->unique(Order::class, 'order_number', ignorable: null) // Validate uniqueness in the 'orders' table, 'order_number' column
+                        ->validationMessages([
+                            'unique' => 'Já existe uma ordem de serviço com este número.',
+                        ]),
 
                     Select::make('client_id')
                         ->label('Cliente')
@@ -118,7 +124,11 @@ class OrdersKanbanBoard extends KanbanBoard
 
                     DatePicker::make('deadline')
                         ->label('Prazo de Entrega')
-                        ->required(),
+                        ->required()
+                        ->minDate(now()->startOfDay()) // Ensures the date is not before today
+                        ->validationMessages([
+                            'minDate' => 'O prazo de entrega não pode ser uma data anterior à data atual.',
+                        ]),
                 ])
                 ->action(function (array $data): void {
                     // Create new order with form data
@@ -143,7 +153,7 @@ class OrdersKanbanBoard extends KanbanBoard
                 }),
                 
             Action::make('addService')
-                ->label('Novo Serviço')
+                ->label('Adicionar serviço em uma ordem')
                 ->icon('heroicon-o-wrench')
                 ->visible(function (): bool {
                     // Verifica se existe alguma ordem com o status 'aguardando_servicos'
@@ -231,7 +241,40 @@ class OrdersKanbanBoard extends KanbanBoard
                         
                     DatePicker::make('deadline')
                         ->label('Prazo de Entrega')
-                        ->required(),
+                        ->required()
+                        ->minDate(now()->startOfDay()) // Ensures the date is not before today
+                        ->validationMessages([
+                            'minDate' => 'O prazo de entrega não pode ser uma data anterior à data atual.',
+                        ]) ->maxDate(function (callable $get) {
+                            $orderId = $get('order_id');
+                            if ($orderId) {
+                                $order = Order::find($orderId);
+                                // Assuming Order model has a 'deadline' attribute
+                                // This attribute should be a Carbon instance or a 'Y-m-d' string
+                                if ($order && $order->deadline) {
+                                    return $order->deadline;
+                                }
+                            }
+                            return null; // No restriction if order not found or has no deadline
+                        })
+                        ->hint(function (callable $get) {
+                            $orderId = $get('order_id');
+                            if ($orderId) {
+                                $order = Order::find($orderId);
+                                if ($order && $order->deadline) {
+                                    try {                                        
+                                        $deadlineDate = $order->deadline instanceof Carbon ? $order->deadline : Carbon::parse($order->deadline);
+                                        return 'O prazo máximo conforme a ordem é ' . $deadlineDate->format('d/m/Y') . '.';
+                                    } catch (\Exception $e) {
+                                        return 'Prazo da ordem não pôde ser formatado.';
+                                    }
+                                } else {
+                                    return 'A ordem selecionada não possui um prazo definido.';
+                                }
+                            }
+                            return 'Selecione uma ordem para visualizar o prazo máximo.';
+                        })
+                        ->reactive(),
                         
                     RichEditor::make('description')
                         ->label('Descrição do Serviço')
@@ -253,6 +296,7 @@ class OrdersKanbanBoard extends KanbanBoard
                             'deadline' => $data['deadline'],
                             'status' => TypeOfServiceStatus::pendente->value,
                             'description' => $data['description'],
+                            'order_number' => Order::find($data['order_id'])->order_number,
                             'user_id' => $data['user_id'],
                         ]);
                         
@@ -281,7 +325,7 @@ class OrdersKanbanBoard extends KanbanBoard
                     }
                 }),
 
-            /*  public function onStatusChanged(int $recordId, string $status, array $fromOrderedIds, array $toOrderedIds): void
+            /* public function onStatusChanged(int $recordId, string $status, array $fromOrderedIds, array $toOrderedIds): void
     {
         Order::find($recordId)->update(['status' => $status]);
         Order::setNewOrder($toOrderedIds);

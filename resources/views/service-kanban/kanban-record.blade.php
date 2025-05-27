@@ -123,23 +123,37 @@
 
                                 {{-- Flex container para Titulo/Obs Toggle e Status/Status Dropdown --}}
                                 <div class="flex items-center justify-between">
-                                   
-                                    <div class="flex-grow min-w-0"> 
-                                        <div class="flex items-center">
-                                            <b class="truncate">{{$getLabors->labor->title}}</b>
+                                    {{-- Title and Observations Toggle --}}
+                                    <div class="flex-grow min-w-0">
+                                        <div class="flex items-center justify-start flex-wrap">
+                                            <b class="truncate">{{ $getLabors->labor->title }}</b><br />
+                                            {{ $getLabors->labor->description }}
+
                                             @if($getLabors->observations->count() > 0)
-                                            <button @click="observationsOpen = !observationsOpen" class="text-xs text-blue-500 hover:text-blue-700 focus:outline-none ml-2 flex items-center" title="Ver/Ocultar Observações">
-                                                <svg x-show="!observationsOpen" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                                                </svg>
-                                                <svg x-show="observationsOpen" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="display: none;">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
-                                                </svg>
-                                                <span class="ml-1">({{$getLabors->observations->count()}})</span>
+                                            <button
+                                                @click="observationsOpen = !observationsOpen"
+                                                class="text-xs text-blue-500 hover:text-blue-700 focus:outline-none ml-2 flex items-center gap-1"
+                                                title="Ver/Ocultar Observações">
+                                                <span class="flex items-center" style="margin-left:4px; border-radius: 4px; padding: 2px; border: 1px solid #ccc;">
+                                                    <x-heroicon-o-clipboard-document class="w-4 h-4 text-gray-600" style="margin-left: 4px;" />
+                                                    <span>({{ $getLabors->observations->count() }})</span>
+
+
+                                                    <svg x-show="!observationsOpen" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                                        viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                                    </svg>
+
+                                                    <svg x-show="observationsOpen" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                                        viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="display: none;">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
+                                                    </svg>
+                                                </span>
                                             </button>
                                             @endif
                                         </div>
                                     </div>
+
 
                                     {{-- Dropdown --}}
                                     <div class="flex items-center flex-shrink-0 ml-4">
@@ -180,7 +194,7 @@
                                     </div>
                                 </div>
 
-                                {{-- Collapsible Observations Section --}}
+                                {{-- dropdown com observacoes e historico de datas --}}
                                 @if($getLabors->observations->count() > 0)
                                 <div x-show="observationsOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 transform translate-y-0" x-transition:leave-end="opacity-0 transform -translate-y-2" class="mt-2 space-y-1 pl-4 px-3 border-gray-200 dark:border-gray-600 pt-2" style="display:none;">
                                     @foreach($getLabors->observations as $observation)
@@ -192,6 +206,29 @@
                                         </p>
                                     </div>
                                     @endforeach
+                                    @if($getLabors->created_at)
+                                    <p style="font-size:x-small; margin-top: 6px; margin-left: 10px;">
+                                        <span style="font-weight: bold;">Mao de obra incluída em:</span> {{\Carbon\Carbon::parse($getLabors->created_at)->format('d/m/Y - H:i') ?? 'N/A'}}
+                                    </p>
+                                    @endif
+
+                                    @if($getLabors->approvedAt)
+                                    <p style="font-size:x-small; margin-top: 6px; margin-left: 10px;">
+                                        <span style="font-weight: bold;">Aprovada em:</span> {{\Carbon\Carbon::parse($getLabors->approvedAt)->format('d/m/Y - H:i') ?? 'N/A'}}
+                                    </p>
+                                    @endif
+
+                                    @if($getLabors->startedAt)
+                                    <p style="font-size:x-small; margin-top: 6px; margin-left: 10px;">
+                                        <span style=" font-weight: bold;">Iniciada em:</span> {{\Carbon\Carbon::parse($getLabors->starteddAt)->format('d/m/Y - H:i') ?? 'N/A'}} {{-- Corrected typo from starteddAt to startedAt --}}
+                                    </p>
+                                    @endif
+
+                                    @if($getLabors->finishedAt)
+                                    <p style="font-size:x-small; margin-top: 6px; margin-left: 10px;">
+                                        <span style=" font-weight: bold;">Finalizada em:</span> {{\Carbon\Carbon::parse($getLabors->finishedAt)->format('d/m/Y - H:i') ?? 'N/A'}}
+                                    </p>
+                                    @endif
                                 </div>
                                 @endif
                             </li>

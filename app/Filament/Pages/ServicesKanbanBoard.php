@@ -3,28 +3,34 @@
 namespace App\Filament\Pages;
 
 use App\Enums\TypeOfServiceStatus;
-use App\Enums\TypeOfLaborStatus; 
+use App\Enums\TypeOfLaborStatus;
 use App\Models\Department;
 use App\Models\Order;
 use App\Models\Observation;
 use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\DatePicker;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Actions\Concerns\InteractsWithActions;
 use App\Models\Service;
 use App\Models\ServiceLabor;
 use App\Models\User;
+use App\Models\Part;
+use App\Enums\TypeOfOrderStatus; // Corrected import for TypeOfOrderStatus
 use Filament\Actions\Action;
 use Filament\Forms\Components\Fieldset;
 use Filament\Forms\Components\Select;
 use Mokhosh\FilamentKanban\Pages\KanbanBoard;
 use Livewire\Attributes\On;
 
-class ServicesKanbanBoard extends KanbanBoard implements HasActions 
+class ServicesKanbanBoard extends KanbanBoard implements HasActions
 {
-    use InteractsWithActions; 
+    use InteractsWithActions;
     protected static string $model = Service::class;
     protected static string $statusEnum = TypeOfServiceStatus::class;
     protected static string $recordTitleAttribute = 'formatted_title';
@@ -61,22 +67,22 @@ class ServicesKanbanBoard extends KanbanBoard implements HasActions
                 ->label('Limpar Filtros')
                 ->color('danger')
                 ->icon('heroicon-o-x-circle')
-                ->visible(function() {
-                    return !empty($this->selectedOrderNumber) || 
-                           !empty($this->selectedDepartment) || 
-                           !empty($this->selectedOrderAndDepartment_order_number) || 
-                           !empty($this->selectedOrderAndDepartment_department);
+                ->visible(function () {
+                    return !empty($this->selectedOrderNumber) ||
+                        !empty($this->selectedDepartment) ||
+                        !empty($this->selectedOrderAndDepartment_order_number) ||
+                        !empty($this->selectedOrderAndDepartment_department);
                 })
                 ->action(function () {
                     $this->reset([
-                        'selectedOrderNumber', 
-                        'selectedDepartment', 
-                        'selectedDepartmentUser', 
-                        'selectedOrderAndDepartment_order_number', 
+                        'selectedOrderNumber',
+                        'selectedDepartment',
+                        'selectedDepartmentUser',
+                        'selectedOrderAndDepartment_order_number',
                         'selectedOrderAndDepartment_department'
                     ]);
                 }),
-            
+
             Action::make('filterOptions')
                 ->label('Opções de Filtro')
                 ->icon('heroicon-o-funnel')
@@ -87,6 +93,8 @@ class ServicesKanbanBoard extends KanbanBoard implements HasActions
                         ->schema([
                             Select::make('filterType')
                                 ->label('Tipo de Filtro')
+                                ->native(false)
+                                ->allowHtml()
                                 ->options([
                                     'orderNumber' => 'Número de Ordem',
                                     'clientName' => 'Cliente',
@@ -104,12 +112,12 @@ class ServicesKanbanBoard extends KanbanBoard implements HasActions
 
                             // Filtro por Número de Ordem
                             Select::make('selectedOrderNumber')
-                                ->label('Número de Ordem')                        
+                                ->label('Número de Ordem')
                                 ->options(Service::pluck('order_number', 'order_number')->toArray())
                                 ->placeholder('Selecione um número de ordem')
                                 ->searchable()
-                                ->visible(fn (callable $get) => $get('filterType') === 'orderNumber')
-                                ->required(fn (callable $get) => $get('filterType') === 'orderNumber'),
+                                ->visible(fn(callable $get) => $get('filterType') === 'orderNumber')
+                                ->required(fn(callable $get) => $get('filterType') === 'orderNumber'),
 
                             // Filtro por Cliente
                             Select::make('selectedClientName')
@@ -123,8 +131,8 @@ class ServicesKanbanBoard extends KanbanBoard implements HasActions
                                 )
                                 ->placeholder('Selecione o cliente')
                                 ->searchable()
-                                ->visible(fn (callable $get) => $get('filterType') === 'clientName')
-                                ->required(fn (callable $get) => $get('filterType') === 'clientName'),
+                                ->visible(fn(callable $get) => $get('filterType') === 'clientName')
+                                ->required(fn(callable $get) => $get('filterType') === 'clientName'),
 
                             // Filtro por Departamento
                             Select::make('selectedDepartment')
@@ -139,12 +147,12 @@ class ServicesKanbanBoard extends KanbanBoard implements HasActions
                                 ->placeholder('Selecione o departamento')
                                 ->searchable()
                                 ->reactive()
-                                ->visible(fn (callable $get) => $get('filterType') === 'department')
-                                ->required(fn (callable $get) => $get('filterType') === 'department')
+                                ->visible(fn(callable $get) => $get('filterType') === 'department')
+                                ->required(fn(callable $get) => $get('filterType') === 'department')
                                 ->afterStateUpdated(function ($state, callable $set) {
                                     $set('selectedDepartmentUser', null);
                                 }),
-                            
+
                             Select::make('selectedDepartmentUser')
                                 ->label('Usuário do Departamento')
                                 ->options(function (callable $get) {
@@ -152,12 +160,12 @@ class ServicesKanbanBoard extends KanbanBoard implements HasActions
                                     if (!$departmentId) {
                                         return [];
                                     }
-                                    
+
                                     $department = Department::find($departmentId);
                                     if (!$department) {
                                         return [];
                                     }
-                                    
+
                                     return $department->users()
                                         ->wherePivot('is_active', true)
                                         ->get()
@@ -170,7 +178,7 @@ class ServicesKanbanBoard extends KanbanBoard implements HasActions
                                 ->placeholder('Selecione o usuário (opcional)')
                                 ->searchable()
                                 ->reactive()
-                                ->visible(fn (callable $get) => $get('filterType') === 'department' && $get('selectedDepartment'))
+                                ->visible(fn(callable $get) => $get('filterType') === 'department' && $get('selectedDepartment'))
                                 ->disabled(function (callable $get) {
                                     return empty($get('selectedDepartment'));
                                 }),
@@ -179,10 +187,10 @@ class ServicesKanbanBoard extends KanbanBoard implements HasActions
                 ->action(function (array $data) {
                     // Limpar todos os filtros primeiro
                     $this->reset([
-                        'selectedOrderNumber', 
-                        'selectedDepartment', 
+                        'selectedOrderNumber',
+                        'selectedDepartment',
                         'selectedDepartmentUser',
-                        'selectedOrderAndDepartment_order_number', 
+                        'selectedOrderAndDepartment_order_number',
                         'selectedOrderAndDepartment_department'
                     ]);
 
@@ -199,7 +207,177 @@ class ServicesKanbanBoard extends KanbanBoard implements HasActions
                             $this->selectedDepartmentUser = $data['selectedDepartmentUser'] ?? null;
                             break;
                     }
-                }),               
+                })
+                ->modalWidth('xl'),
+            Action::make('addService')
+                ->label('Novo Serviço')
+                ->icon('heroicon-o-wrench')
+                ->visible(function (): bool {
+                    return Order::where('status', TypeOfOrderStatus::aguardando_servicos->value)->exists();
+                    return Order::where('status', TypeOforderStatus::aguardando_servicos->value)->exists();
+                })
+                ->form([
+                    Select::make('order_id')
+                        ->label('Ordens que aguardam serviços')
+                        ->options(function () {
+                            // 1. Busca as ordens filtradas com as relações necessárias para o acessor
+                            $orders = Order::with(['client', 'vehicle']) // Carrega as relações
+                                ->where('status', TypeOforderStatus::aguardando_servicos->value)
+                                ->get();
+
+                            // 2. Mapeia para o formato [id => formatted_title]
+                            return $orders->mapWithKeys(function ($order) {
+                                return [$order->id => $order->formatted_title]; // Usa o acessor aqui
+                            });
+                        })
+                        ->required()
+                        ->searchable()
+                        ->reactive()
+                        ->afterStateUpdated(function ($state, callable $set) {
+                            // Limpa os campos dependentes quando a ordem muda
+                            $set('part_id', null);
+                            $set('department_id', null);
+                        }),
+
+                    Select::make('part_id')
+                        ->label('Peça/Componente')
+                        ->options(function (callable $get) {
+                            if (!$get('order_id')) return [];
+
+                            $order = Order::find($get('order_id'));
+                            if (!$order) return [];
+
+                            $vehicleId = $order->vehicle_id;
+
+                            // Filtra peças pelo veículo ou retorna todas se não houver filtro específico
+                            return Part::where(function ($query) use ($vehicleId) {
+                                $query->where('vehicle_id', $vehicleId)
+                                    ->orWhereNull('vehicle_id');
+                            })->pluck('title', 'id');
+                        })
+                        ->createOptionForm([
+                            TextInput::make('title')
+                                ->required()
+                                ->label('Nome da Peça')
+                                ->placeholder('Ex: Motor, Suspensão, etc'),
+
+                            TextInput::make('parameters')
+                                ->label('Parâmetros')
+                                ->placeholder('Informações técnicas sobre a peça'),
+
+
+                        ])
+                        ->createOptionUsing(function (array $data, callable $get) {
+                            $order = Order::find($get('order_id'));
+                            if (!$order) return null;
+
+                            $data['vehicle_id'] = $order->vehicle_id;
+                            return Part::create($data)->getKey();
+                        })
+                        ->required()
+                        ->searchable(),
+
+                    Select::make('department_id')
+                        ->label('Departamento')
+                        ->options(Department::all()->pluck('title', 'id'))
+                        ->required()
+                        ->searchable(),
+
+                    Select::make('user_id')
+                        ->label('Responsável')
+                        ->options(function (callable $get) {
+                            if (!$get('department_id')) return User::all()->pluck('name', 'id');
+
+                            // Filtra usuários pelo departamento selecionado
+                            return Department::find($get('department_id'))
+                                ->activeUsers()
+                                ->pluck('name', 'id');
+                        })
+                        ->required()
+                        ->searchable(),
+
+                    DatePicker::make('deadline')
+                        ->label('Prazo de Entrega')
+                        ->required()
+                        ->maxDate(function (callable $get) {
+                            $orderId = $get('order_id');
+                            if ($orderId) {
+                                $order = Order::find($orderId);
+                                // Assuming Order model has a 'deadline' attribute
+                                // This attribute should be a Carbon instance or a 'Y-m-d' string
+                                if ($order && $order->deadline) {
+                                    return $order->deadline;
+                                }
+                            }
+                            return null; // No restriction if order not found or has no deadline
+                        })
+                        ->hint(function (callable $get) {
+                            $orderId = $get('order_id');
+                            if ($orderId) {
+                                $order = Order::find($orderId);
+                                if ($order && $order->deadline) {
+                                    try {                                        
+                                        $deadlineDate = $order->deadline instanceof Carbon ? $order->deadline : Carbon::parse($order->deadline);
+                                        return 'O prazo máximo conforme a ordem é ' . $deadlineDate->format('d/m/Y') . '.';
+                                    } catch (\Exception $e) {
+                                        return 'Prazo da ordem não pôde ser formatado.';
+                                    }
+                                } else {
+                                    return 'A ordem selecionada não possui um prazo definido.';
+                                }
+                            }
+                            return 'Selecione uma ordem para visualizar o prazo máximo.';
+                        })
+                        ->reactive(),
+
+                    RichEditor::make('description')
+                        ->label('Descrição do Serviço')
+                        ->required()
+                        ->placeholder('Detalhes do serviço a ser realizado'),
+
+
+                ])
+                ->action(function (array $data): void {
+                    // Inicia uma transação para garantir integridade dos dados
+                    DB::beginTransaction();
+
+                    try {
+                        // Cria o serviço
+                        $service = Service::create([
+                            'order_id' => $data['order_id'],
+                            'part_id' => $data['part_id'],
+                            'department_id' => $data['department_id'],
+                            'deadline' => $data['deadline'],
+                            'status' => TypeOfServiceStatus::pendente->value,
+                            'description' => $data['description'],
+                            'order_number' => Order::find($data['order_id'])->order_number,
+                            'user_id' => $data['user_id'],
+                        ]);
+
+
+
+                        DB::commit();
+
+                        // Mostra notificação de sucesso
+                        Notification::make()
+                            ->title('Serviço adicionado com sucesso!')
+                            ->body('O serviço foi adicionado à ordem #' . Order::find($data['order_id'])->order_number)
+                            ->success()
+                            ->send();
+
+                        // Recarrega a página para mostrar a atualização
+                        $this->redirect(OrdersKanbanBoard::getUrl());
+                    } catch (\Exception $e) {
+                        DB::rollBack();
+
+                        // Mostra notificação de erro
+                        Notification::make()
+                            ->title('Erro ao adicionar serviço')
+                            ->body('Ocorreu um erro: ' . $e->getMessage())
+                            ->danger()
+                            ->send();
+                    }
+                }),
         ];
     }
 
@@ -239,15 +417,15 @@ class ServicesKanbanBoard extends KanbanBoard implements HasActions
                 // $query->where('user_id', $this->selectedDepartmentUser);
 
                 // If filtering Services that have at least one ServiceLabor assigned to this user
-                 $query->whereHas('serviceLabors', function ($q) {
-                     $q->where('user_id', $this->selectedDepartmentUser);
-                 });
+                $query->whereHas('serviceLabors', function ($q) {
+                    $q->where('user_id', $this->selectedDepartmentUser);
+                });
             }
         }
 
         if ($this->selectedOrderAndDepartment_order_number && $this->selectedOrderAndDepartment_department) {
             $query->where('order_number', $this->selectedOrderAndDepartment_order_number)
-                  ->where('department_id', $this->selectedOrderAndDepartment_department);
+                ->where('department_id', $this->selectedOrderAndDepartment_department);
         }
 
         return $query->get();
@@ -286,7 +464,7 @@ class ServicesKanbanBoard extends KanbanBoard implements HasActions
             } else {
                 $activeUsers = $department->activeUsers()->get();
 
-                if ($activeUsers->isNotEmpty()) {                
+                if ($activeUsers->isNotEmpty()) {
 
                     foreach ($activeUsers as $user) {
                         $userAvatar = app('userAvatar')($user->id);
@@ -344,7 +522,7 @@ class ServicesKanbanBoard extends KanbanBoard implements HasActions
         // Rule 2: Cannot change a 'finalizado' labor to any other status.
         // This also implicitly prevents a 'finalizado' labor from being 'cancelado'.
         if ($originalStatusValue === TypeOfLaborStatus::finalizado->value && $newStatus !== TypeOfLaborStatus::finalizado->value) {
-             Notification::make()
+            Notification::make()
                 ->title('Ação Não Permitida')
                 ->body('Uma mão de obra finalizada não pode ter seu status alterado.')
                 ->warning()
@@ -367,11 +545,11 @@ class ServicesKanbanBoard extends KanbanBoard implements HasActions
             try {
                 $statusEnum = TypeOfLaborStatus::from($newStatus);
                 $serviceLabor->status = $statusEnum;
-                 if ($statusEnum === TypeOfLaborStatus::em_andamento && is_null($serviceLabor->startedAt)) {
-                 $serviceLabor->startedAt = now();
+                if ($statusEnum === TypeOfLaborStatus::em_andamento && is_null($serviceLabor->startedAt)) {
+                    $serviceLabor->startedAt = now();
                 }
                 if ($statusEnum === TypeOfLaborStatus::finalizado && is_null($serviceLabor->finishedAt)) {
-                $serviceLabor->finishedAt = now();
+                    $serviceLabor->finishedAt = now();
                 }
                 $serviceLabor->save();
 
@@ -383,59 +561,59 @@ class ServicesKanbanBoard extends KanbanBoard implements HasActions
         }
     }
 
-        // Action to handle the cancellation with observation
-        public function cancelLaborOnServiceCard(): Action
-        {
-            return Action::make('cancelLaborOnServiceCard')
-                ->label('Cancelar Mão de Obra')
-                ->record(fn() => $this->selectedLaborForCancellation)
-                ->modalHeading('Confirmar Cancelamento de Mão de Obra')
-                ->form([
-                    Placeholder::make('cancellation_info')
-                        ->label('')
-                        ->content(function (?ServiceLabor $record) {
-                            if (!$record) return 'Mão de obra não selecionada.';
-                            return "Você está cancelando a mão de obra: \"{$record->labor->title}\" associada ao serviço da ordem nº \"{$record->order->order_number}\".";
-                        }),
-                    RichEditor::make('cancellation_description')
-                        ->label('Motivo do Cancelamento')
-                        ->required()
-                        ->columnSpanFull(),
-                ])
-                ->action(function (array $data, ServiceLabor $record) {
-                    Observation::create([
-                        'service_labor_id' => $record->id,
-                        'order_id' => $record->order_id,
-                        'service_id' => $record->service_id,
-                        'user_id' => Auth::id(),
-                        'title' => 'Mão de obra cancelada',
-                        'description' => $data['cancellation_description'],
-                    ]);
-    
-                    $record->status = TypeOfLaborStatus::cancelado->value;
-                    $record->save();
-    
-                    Notification::make()
-                        ->title('Mão de Obra Cancelada')
-                        ->body('A mão de obra foi marcada como cancelada.')
-                        ->success()
-                        ->send();
-    
-                    // Refresh the specific service card where this labor belongs
-                    if ($this->recordIdForCancellation) {
-                        $this->dispatch('laborStatusUpdated', recordId: $this->recordIdForCancellation)->self();
-                    } else {
-                        $this->dispatch('$refresh'); // Fallback to full refresh
-                    }
-                    $this->selectedLaborForCancellation = null; // Clear selection
-                    $this->recordIdForCancellation = null;
-                })
-                ->modalCancelActionLabel('Voltar')
-                ->modalSubmitActionLabel('Confirmar Cancelamento')
-                ->modalWidth('xl');
-        }
+    // Action to handle the cancellation with observation
+    public function cancelLaborOnServiceCard(): Action
+    {
+        return Action::make('cancelLaborOnServiceCard')
+            ->label('Cancelar Mão de Obra')
+            ->record(fn() => $this->selectedLaborForCancellation)
+            ->modalHeading('Confirmar Cancelamento de Mão de Obra')
+            ->form([
+                Placeholder::make('cancellation_info')
+                    ->label('')
+                    ->content(function (?ServiceLabor $record) {
+                        if (!$record) return 'Mão de obra não selecionada.';
+                        return "Você está cancelando a mão de obra: \"{$record->labor->title}\" associada ao serviço da ordem nº \"{$record->order->order_number}\".";
+                    }),
+                RichEditor::make('cancellation_description')
+                    ->label('Motivo do Cancelamento')
+                    ->required()
+                    ->columnSpanFull(),
+            ])
+            ->action(function (array $data, ServiceLabor $record) {
+                Observation::create([
+                    'service_labor_id' => $record->id,
+                    'order_id' => $record->order_id,
+                    'service_id' => $record->service_id,
+                    'user_id' => Auth::id(),
+                    'title' => 'Mão de obra cancelada',
+                    'description' => $data['cancellation_description'],
+                ]);
 
-        
+                $record->status = TypeOfLaborStatus::cancelado->value;
+                $record->save();
+
+                Notification::make()
+                    ->title('Mão de Obra Cancelada')
+                    ->body('A mão de obra foi marcada como cancelada.')
+                    ->success()
+                    ->send();
+
+                // Refresh the specific service card where this labor belongs
+                if ($this->recordIdForCancellation) {
+                    $this->dispatch('laborStatusUpdated', recordId: $this->recordIdForCancellation)->self();
+                } else {
+                    $this->dispatch('$refresh'); // Fallback to full refresh
+                }
+                $this->selectedLaborForCancellation = null; // Clear selection
+                $this->recordIdForCancellation = null;
+            })
+            ->modalCancelActionLabel('Voltar')
+            ->modalSubmitActionLabel('Confirmar Cancelamento')
+            ->modalWidth('xl');
+    }
+
+
     // Register the action so mountAction can find it
     protected function getFormActions(): array
     {
