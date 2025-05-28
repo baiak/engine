@@ -16,5 +16,11 @@ enum TypeOfLaborImpedimentStatus: string
     public static function getLabels(): array
     {
         return array_map(fn($case) => $case->name, self::cases());
+
+    }
+
+    public static function options(): array
+    {
+        return array_column(self::cases(), 'value');
     }
 }

@@ -22,31 +22,48 @@ class CreateLaborImpediment extends CreateRecord
         $createdImpediments = [];
         $complainantId = Auth::id();
 
-        // Prepare the initial log entry as per your structure **
         $initialLogEntry = [
             'date' => now()->toDateTimeString(),
             'user_id' => $complainantId,
-            'observation' => $data['description_for_log'], // From the temporary form field
-            'selected_status' => $data['status'],          // Status chosen in the form **
+            'observation' => $data['description_for_log'],
+            'selected_status' => $data['status'],
         ];
 
         $usersToReceiveImpediment = collect();
+        $selectionType = $data['target_selection_type'];
 
-        if ($data['target_audience'] === 'all_system_users') {
+        if ($selectionType === 'system_all_users') {
             $usersToReceiveImpediment = User::all();
-        } else {
-            // Assumes target_audience stores a department_id
-            $departmentId = $data['target_audience'];
-            // Get users belonging to the selected department. User model has BelongsToMany departments. **
-            $usersToReceiveImpediment = User::whereHas('departments', function ($query) use ($departmentId) {
-                $query->where('departments.id', $departmentId); // Ensure 'departments.id' is correct join condition
-            })->get();
+        } elseif ($selectionType === 'department_all_users') {
+            $departmentId = $data['target_department_id'] ?? null;
+            if ($departmentId) {
+                $department = Department::find($departmentId);
+                if ($department) {
+                    // Use the 'users' relationship from your Department model
+                    $usersToReceiveImpediment = $department->users()->get(); // Ensure it's a collection
+                } else {
+                    throw ValidationException::withMessages(['target_department_id' => 'Departamento selecionado não encontrado.']);
+                }
+            } else {
+                 throw ValidationException::withMessages(['target_department_id' => 'Departamento é obrigatório para esta opção.']);
+            }
+        } elseif ($selectionType === 'department_specific_user') {
+            $userId = $data['final_complained_user_id'] ?? null;
+            if ($userId) {
+                $user = User::find($userId);
+                if ($user) {
+                    $usersToReceiveImpediment->push($user);
+                } else {
+                     throw ValidationException::withMessages(['final_complained_user_id' => 'Usuário específico selecionado não encontrado.']);
+                }
+            } else {
+                throw ValidationException::withMessages(['final_complained_user_id' => 'Usuário específico é obrigatório para esta opção.']);
+            }
         }
 
         if ($usersToReceiveImpediment->isEmpty()) {
-            // It's good practice to throw a validation exception that Filament can catch and display
             throw ValidationException::withMessages([
-                'target_audience' => 'Nenhum usuário encontrado para o público alvo selecionado. Verifique o departamento ou a seleção.',
+                'target_selection_type' => 'Nenhum usuário alvo foi determinado com base na seleção. Verifique as opções de direcionamento.',
             ]);
         }
 
@@ -54,13 +71,12 @@ class CreateLaborImpediment extends CreateRecord
 
         foreach ($usersToReceiveImpediment as $user) {
             $impedimentData = [
-                'service_labor_id' => $data['service_labor_id'], // **
-                'complainant_id' => $complainantId,              // **
-                'complained_id' => $user->id,                    // ** The user this impediment is for
-                'reason' => $data['reason'],                     // **
-                'status' => $data['status'],                     // **
-                'logs' => [$initialLogEntry], // Store as an array of log objects; Eloquent will cast to JSON **
-                // 'observations' is ignored as requested **
+                'service_labor_id' => $data['service_labor_id'],
+                'complainant_id' => $complainantId,
+                'complained_id' => $user->id, // Assign the target user's ID
+                'reason' => $data['reason'],
+                'status' => $data['status'],
+                'logs' => [$initialLogEntry],
             ];
             $newImpediment = static::getModel()::create($impedimentData);
             if(!$firstCreatedImpediment) {
@@ -68,16 +84,13 @@ class CreateLaborImpediment extends CreateRecord
             }
             $createdImpediments[] = $newImpediment;
         }
-
-        if (empty($createdImpediments)) {
-             // This case should ideally be prevented by the isEmpty check above,
-             // but as a fallback:
+        
+        if (empty($createdImpediments) && $firstCreatedImpediment === null) { // Should be caught by isEmpty check above
             Notification::make()
                 ->title('Nenhum impedimento foi criado.')
                 ->warning()
                 ->send();
-            // Return a new model instance to prevent errors, though this indicates a logic flaw if reached.
-            return new (static::getModel());
+            return new (static::getModel()); // Return a new model instance to prevent errors
         }
 
         Notification::make()
@@ -85,9 +98,7 @@ class CreateLaborImpediment extends CreateRecord
             ->success()
             ->send();
 
-        // The method expects a single Model instance to be returned for redirection purposes.
-        // We return the first one created.
-        return $firstCreatedImpediment;
+        return $firstCreatedImpediment; // Return the first created model
     }
 
     protected function getRedirectUrl(): string

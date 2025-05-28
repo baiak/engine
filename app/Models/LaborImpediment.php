@@ -26,32 +26,34 @@ class LaborImpediment extends Model
 
     protected $casts = [
         'status' => TypeOfLaborImpedimentStatus::class,
-        'logs'=>'json',
+        'logs' => 'json',
 
     ];
 
-        // Relationship to the user who made the complaint
-        public function complainantUser(): BelongsTo
-        {
-            return $this->belongsTo(User::class, 'complainant_id');
-        }
-    
-        // Relationship to the user who is assigned/complained to
-        public function complainedUser(): BelongsTo
-        {
-            return $this->belongsTo(User::class, 'complained_id');
-        }
-    
-        // Relationship to the specific ServiceLabor entry
-        public function serviceLabor(): BelongsTo
-        {
-            return $this->belongsTo(ServiceLabor::class, 'service_labor_id');
-        }
 
-    public static function listImpediments($serviceLaborId){
+    // Relationship to the user who made the complaint
+    public function complainantUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'complainant_id');
+    }
+
+    // Relationship to the user who is assigned/complained to
+    public function complainedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'complained_id');
+    }
+
+    // Relationship to the specific ServiceLabor entry
+    public function serviceLabor(): BelongsTo
+    {
+        return $this->belongsTo(ServiceLabor::class, 'service_labor_id');
+    }
+
+    public static function listImpediments($serviceLaborId)
+    {
         return LaborImpediment::where('service_labor_id', $serviceLaborId)->orderBy('id', 'desc')->get();
     }
-/*    public static function loadLogs($id)
+    /*    public static function loadLogs($id)
     {
         $selectLogs = LaborImpediment::where('id',$id)->get();
 
@@ -62,6 +64,7 @@ class LaborImpediment extends Model
         return $dataLogs;
 
     }*/
+    
     public static function loadLogs($id)
     {
         // Encontra o registro pelo ID
@@ -86,7 +89,4 @@ class LaborImpediment extends Model
 
         return $dataLogs;
     }
-
-
-
 }

@@ -1,0 +1,1 @@
+@livewire('labor-impediment-logs-manager', ['impediment' => $getRecord()])

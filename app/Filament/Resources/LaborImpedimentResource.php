@@ -43,13 +43,14 @@ class LaborImpedimentResource extends Resource
             ->schema([
                 Forms\Components\Select::make('order_id')
                     ->label('Ordem de Serviço')
+                    ->native(false)
                     ->options(function () {
                         return \App\Models\Order::query()
                             ->whereHas('service', function (Builder $query) {
                                 $query->whereIn('status', [\App\Enums\TypeOfServiceStatus::pendente, \App\Enums\TypeOfServiceStatus::aprovado])
-                                      ->whereHas('serviceLabors', function (Builder $subQuery) {
-                                          $subQuery->whereIn('status', ['pendente', 'aguardando aprovação', 'aprovado', 'em andamento']);
-                                      });
+                                    ->whereHas('serviceLabors', function (Builder $subQuery) {
+                                        $subQuery->whereIn('status', ['pendente', 'aguardando aprovação', 'aprovado', 'em andamento']);
+                                    });
                             })
                             ->get()
                             ->mapWithKeys(fn(\App\Models\Order $order) => [
@@ -64,25 +65,38 @@ class LaborImpedimentResource extends Resource
                     ->columnSpanFull(),
 
                 Forms\Components\Select::make('service_id')
-                    ->label('Serviço')
+                    ->label('Peça/Serviço')
                     ->options(function (Get $get) {
                         $orderId = $get('order_id');
                         if (!$orderId) {
                             return [];
                         }
-                        return \App\Models\Service::query()
+                        return Service::query()
                             ->where('order_id', $orderId)
-                            ->whereIn('status', [\App\Enums\TypeOfServiceStatus::pendente, \App\Enums\TypeOfServiceStatus::aprovado])
+                            ->whereIn('status', [\App\Enums\TypeOfServiceStatus::pendente->value, \App\Enums\TypeOfServiceStatus::aprovado->value])
                             ->whereHas('serviceLabors', function (Builder $subQuery) {
                                 $subQuery->whereIn('status', ['pendente', 'aguardando aprovação', 'aprovado', 'em andamento']);
                             })
-                            ->with('order') // Eager load order to prevent N+1 if accessing order details
+                            ->with(['order:id,order_number', 'part:id,title']) // Eager load 'part' relationship
                             ->get()
-                            ->mapWithKeys(function (\App\Models\Service $service) {
-                                $description = $service->description ?? ('Serviço ID: ' . $service->id);
+                            ->mapWithKeys(function (Service $service) {
+                                // Obter o nome da peça usando o atributo 'title' do modelo Part
+                                $partName = $service->part ? ($service->part->title ?? 'Peça não especificada') : 'Peça não vinculada'; //
+
+                                // Limpar HTML da descrição do serviço
+                                $rawServiceDescription = $service->description ?? '';
+                                $serviceDescription = strip_tags((string) $rawServiceDescription);
+                                if (empty(trim($serviceDescription))) {
+                                    $serviceDescription = 'serviço não descrito';
+                                }
+
                                 $orderNumber = $service->order ? ($service->order->order_number ?? 'N/A') : 'N/A';
+
+                                // Construir o novo rótulo
+                                $label = "Peça: {$partName} - {$serviceDescription} (OS: {$orderNumber})";
+
                                 return [
-                                    $service->id => "{$description} (OS: {$orderNumber})"
+                                    $service->id => $label
                                 ];
                             })
                             ->toArray();
@@ -95,6 +109,7 @@ class LaborImpedimentResource extends Resource
 
                 Forms\Components\Select::make('service_labor_id') // This will be stored **
                     ->label('Mão de Obra')
+                    ->native(false)
                     ->options(function (Get $get) {
                         $serviceId = $get('service_id');
                         if (!$serviceId) {
@@ -103,13 +118,13 @@ class LaborImpedimentResource extends Resource
                         return \App\Models\ServiceLabor::query()
                             ->where('service_id', $serviceId)
                             ->whereIn('status', ['pendente', 'aguardando aprovação', 'aprovado', 'em andamento'])
-                            ->with('labor') // Eager load labor for its title
+                            ->with('labor','service.part') // Eager load labor for its title
                             ->get()
                             ->mapWithKeys(function (\App\Models\ServiceLabor $sl) {
                                 $laborTitle = $sl->labor ? ($sl->labor->title ?? 'Título Indisponível') : 'Mão de Obra N/A'; // (Adjusted)
                                 $status = $sl->status ?? 'Status N/A'; // Fallback for status
                                 return [
-                                    $sl->id => "ID: {$sl->id} - {$laborTitle} (Status: {$status})"
+                                    $sl->id => "Peça: {$sl->service->part->title} - {$laborTitle} (Status: {$status})"
                                 ];
                             })
                             ->toArray();
@@ -118,32 +133,67 @@ class LaborImpedimentResource extends Resource
                     ->required()
                     ->columnSpanFull(),
 
-                Forms\Components\Select::make('target_audience') // Not mapped directly, used for logic
-                    ->label('Direcionar Impedimento Para')
-                    ->options(function () {
-                        // Ensure department names are not null, or provide a fallback
-                        $departments = \App\Models\Department::all()->mapWithKeys(function ($department) {
-                            return [$department->id => $department->name ?? "Departamento ID: {$department->id} (Sem Nome)"];
-                        })->toArray();
-                        $departments['all_system_users'] = 'Todos os Usuários (do Sistema)';
-                        return $departments;
-                    })
-                    ->helperText('Se um departamento for selecionado, o impedimento será criado para todos os usuários daquele departamento. Se "Todos os Usuários" for selecionado, será criado para cada usuário no sistema.')
+                // --- New Targeting Logic ---
+                Forms\Components\Select::make('target_selection_type')
+                    ->label('Como Direcionar o Impedimento?')
+                    ->native(false)
+
+                    ->options([
+                        'department_specific_user' => 'Para um Usuário Específico de um Departamento',
+                        'department_all_users' => 'Para Todos os Usuários de um Departamento',
+                        'system_all_users' => 'Para Todos os Usuários do Sistema',
+                    ])
+                    ->live() // Essential for conditional visibility
                     ->required()
+                    ->afterStateUpdated(function (Set $set) { // Reset dependent fields when this changes
+                        $set('target_department_id', null);
+                        $set('final_complained_user_id', null);
+                    })
                     ->columnSpanFull(),
 
-                Forms\Components\Textarea::make('reason') // **
+                Forms\Components\Select::make('target_department_id')
+                    ->label('Selecione o Departamento')
+                    ->native(false)
+                    ->options(Department::all()->pluck('title', 'id')->toArray()) //
+                    ->live()
+                    ->visible(fn(Get $get) => in_array($get('target_selection_type'), ['department_specific_user', 'department_all_users']))
+                    ->required(fn(Get $get) => in_array($get('target_selection_type'), ['department_specific_user', 'department_all_users']))
+                    ->searchable()
+                    ->afterStateUpdated(fn(Set $set) => $set('final_complained_user_id', null)) // Reset user if department changes
+                    ->columnSpanFull(),
+
+                Forms\Components\Select::make('final_complained_user_id') // This field will store the target user's ID if a specific user is chosen
+                    ->label('Selecione o Usuário Específico')
+                    ->native(false)
+                    ->options(function (Get $get) {
+                        $departmentId = $get('target_department_id');
+                        if ($get('target_selection_type') === 'department_specific_user' && $departmentId) {
+                            $department = Department::find($departmentId);
+                            // Uses the 'users' relationship from Department model and 'name' from User model
+                            return $department ? $department->users()->pluck('users.name', 'users.id')->toArray() : [];
+                        }
+                        return []; // No options if not applicable
+                    })
+                    ->searchable()
+                    ->visible(fn(Get $get) => $get('target_selection_type') === 'department_specific_user')
+                    ->required(fn(Get $get) => $get('target_selection_type') === 'department_specific_user')
+                    ->columnSpanFull(),
+
+                Forms\Components\TextInput::make('reason') // **
                     ->label('Motivo do Impedimento')
+                    ->hint('Descreva uma razão para o impedimento de forma clara, resumida e objetiva.')
                     ->required()
                     ->columnSpanFull(),
 
                 Forms\Components\Select::make('status') // **
                     ->label('Status Inicial do Impedimento')
-                    ->options(TypeOfLaborImpedimentStatus::class) // **
+                    ->native(false)
+                    ->options([\App\Enums\TypeOfLaborImpedimentStatus::getValues()])
+                    ->default(TypeOfLaborImpedimentStatus::em_aberto->value) // Define o valor padrão
                     ->required(),
 
-                Forms\Components\Textarea::make('description_for_log') // Not mapped directly
-                    ->label('Descrição/Observação Inicial (para o log)')
+                Forms\Components\RichEditor::make('description_for_log') // Not mapped directly
+                    ->label('Descrição/Observação Inicial do Impedimento')
                     ->helperText('Esta descrição será o primeiro registro no histórico do impedimento.')
                     ->required()
                     ->columnSpanFull(),
@@ -153,12 +203,8 @@ class LaborImpedimentResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->contentGrid([ // This enables a card-like layout
-                'md' => 2, // 2 columns on medium screens
-                'lg' => 3, // 3 columns on large screens
-            ])
             ->columns([
-                Tables\Columns\TextColumn::make('id')->sortable()->searchable(),
+                //Tables\Columns\TextColumn::make('id')->sortable()->searchable(),
                 Tables\Columns\TextColumn::make('serviceLabor.labor.title') // **
                     ->label('Mão de Obra')
                     ->tooltip(fn(LaborImpediment $record): string => "Serviço: {$record->serviceLabor?->service?->description} (OS: {$record->serviceLabor?->service?->order?->order_number})")
@@ -209,7 +255,7 @@ class LaborImpedimentResource extends Resource
             'index' => Pages\ListLaborImpediments::route('/'),
             'create' => Pages\CreateLaborImpediment::route('/create'),
             'view' => Pages\ViewLaborImpediment::route('/{record}'), // View page is good for showing details including logs
-             //'edit' => Pages\EditLaborImpediment::route('/{record}/edit'),
+            //'edit' => Pages\EditLaborImpediment::route('/{record}/edit'),
         ];
     }
 }

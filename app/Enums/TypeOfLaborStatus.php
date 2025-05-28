@@ -49,7 +49,7 @@ enum TypeOfLaborStatus: string implements HasLabel, HasIcon, HasColor
             self::em_andamento => 'style="padding:3px; background-color:#FFF; border-radius:4px; color: #1e40af; font-size: small"',  
             self::cancelado => 'style="padding:3px; background-color:#FFF; border-radius:4px; color:rgb(229, 17, 63); font-size: small"',          
             self::finalizado => 'style="padding:3px; background-color:#FFF; border-radius:4px; color: #065f46;font-size: small"',
-            self::CANCELLED => 'style="padding:3px; background-color:#FFF; border-radius:4px; color:rgb(229, 17, 63); font-size: small"',
+            self::cancelado => 'style="padding:3px; background-color:#FFF; border-radius:4px; color:rgb(229, 17, 63); font-size: small"',
         };
     }
     public function getColor(): string

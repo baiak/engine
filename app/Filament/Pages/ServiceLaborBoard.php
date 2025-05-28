@@ -182,7 +182,8 @@ use Livewire\Attributes\On;
         $actions = [];
         $userId = Auth::id();
 
-        $actions[] = Action::make('clearFilters')
+        $actions[] = 
+        Action::make('clearFilters')
             ->label('Limpar Filtros')
             ->color('danger')
             ->icon('heroicon-o-x-circle')
@@ -195,7 +196,8 @@ use Livewire\Attributes\On;
                 Notification::make()->title('Filtros Limpos')->success()->send();
             });
 
-        $actions[] = Action::make('filterServiceLabor')
+        $actions[] = 
+        Action::make('filterServiceLabor')
             ->label('Filtrar Mão de Obra')->icon('heroicon-o-funnel')
             ->form([
                 Select::make('selectedOrderNumber')
