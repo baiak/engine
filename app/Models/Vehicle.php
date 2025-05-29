@@ -40,7 +40,7 @@ class Vehicle extends Model
     {
         return $this->hasOne(Service::class);
     }
-    public function getTitleAttribute(): string
+    public function getFormattedVehicleAttribute(): string
     {
         return "{$this->factory}/{$this->model}/{$this->motor}";
     }
