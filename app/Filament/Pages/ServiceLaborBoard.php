@@ -182,8 +182,8 @@ use Livewire\Attributes\On;
         $actions = [];
         $userId = Auth::id();
 
-        $actions[] = 
-        Action::make('clearFilters')
+        $actions[] =
+            Action::make('clearFilters')
             ->label('Limpar Filtros')
             ->color('danger')
             ->icon('heroicon-o-x-circle')
@@ -196,8 +196,8 @@ use Livewire\Attributes\On;
                 Notification::make()->title('Filtros Limpos')->success()->send();
             });
 
-        $actions[] = 
-        Action::make('filterServiceLabor')
+        $actions[] =
+            Action::make('filterServiceLabor')
             ->label('Filtrar Mão de Obra')->icon('heroicon-o-funnel')
             ->form([
                 Select::make('selectedOrderNumber')
@@ -247,8 +247,8 @@ use Livewire\Attributes\On;
 
         // START: Badge Logic
         $pendingServicesCount = Service::where('status', TypeOfServiceStatus::pendente->value)
-                                      ->where('user_id', $userId)
-                                      ->count(); //
+            ->where('user_id', $userId)
+            ->count(); //
         // END: Badge Logic
 
         // A visibilidade do botão já considera se há serviços pendentes para o usuário.
@@ -276,7 +276,7 @@ use Livewire\Attributes\On;
                             if (!$orderId) {
                                 return [];
                             }
-                    
+
                             return Service::where('order_id', $orderId)
                                 ->where('status', TypeOfServiceStatus::pendente->value) //
                                 ->where('user_id', $userId) //
@@ -285,7 +285,7 @@ use Livewire\Attributes\On;
                                     $partDescription = $service->part ? $service->part->title : 'Peça não especificada';
                                     $label = "Serviço #{$service->id} ({$partDescription}) - {$service->description}";
                                     return [$service->id => strip_tags($label)];
-                                });                        
+                                });
                         })
                         ->disabled(fn(Get $get) => !$get('order_id'))->live()->searchable()->required()->placeholder('Selecione um Serviço'),
                     Select::make('labor_id')
@@ -298,7 +298,16 @@ use Livewire\Attributes\On;
                         ->createOptionUsing(function (array $data): int {
                             return Labor::create(['title' => $data['title'], 'description' => $data['description'], 'part_id' => $data['part_id'] ?? null,])->id;
                         }),
-                    Textarea::make('description')->label('Observações para esta Mão de Obra no Serviço (Opcional)')->rows(3),
+                    RichEditor::make('description')->label('Observações para esta Mão de Obra no Serviço')
+                        ->placeholder('Descreva detalhes adicionais sobre esta mão de obra')
+                        ->columnSpanFull()
+                        ->required()
+                        ->toolbarButtons([
+                            'bold',
+                            'italic',
+                            'underline',
+                            'attachFiles',
+                        ]),
                 ])
                 ->action(function (array $data) use ($userId) {
                     $service = Service::find($data['service_id']);
@@ -313,7 +322,7 @@ use Livewire\Attributes\On;
 
             if ($pendingServicesCount > 0) { //
                 $addLaborAction->badge($pendingServicesCount); //
-                              
+
             }
             $actions[] = $addLaborAction;
         }
@@ -343,14 +352,15 @@ use Livewire\Attributes\On;
         return $query->get();
     }
     public function getAdditionalData(): string
-    {    $activeFiltersMessages = [];
+    {
+        $activeFiltersMessages = [];
 
         if ($this->selectedOrderNumber) {
             // Assuming Order::find() might be useful if you need more than just the number
             // For now, using the number directly as in your original code.
             $activeFiltersMessages[] = "Exibindo serviços da ordem: <strong>{$this->selectedOrderNumber}</strong>";
         }
-    
+
         if ($this->selectedDepartment) {
             $department = Department::find($this->selectedDepartment);
             if ($department) {
@@ -361,7 +371,7 @@ use Livewire\Attributes\On;
                         // You might want to include the avatar here if desired, similar to your original complex HTML
                         $userAvatarHtml = ''; // Placeholder for avatar logic if needed
                         if (function_exists('app') && app()->has('userAvatar')) {
-                             $userAvatarHtml = app('userAvatar')($user->id) . ' ';
+                            $userAvatarHtml = app('userAvatar')($user->id) . ' ';
                         }
                         $departmentMessage .= " <div class='flex items-center gap-1 mt-1 text-xs'>{$userAvatarHtml}Filtrado por usuário: <strong>{$user->name}</strong></div>";
                     } else {
@@ -374,18 +384,18 @@ use Livewire\Attributes\On;
             }
         }
         // Add checks for other independent filters here if any
-    
+
         if (empty($activeFiltersMessages)) {
             return '<div class="inline-block text-sm text-gray-600 dark:text-gray-300">Exibindo todas as mãos de obra</div>';
         }
-    
+
         // Construct the HTML to display all active filters
         $html = '<div class="inline-block rounded-lg bg-gray-100 dark:bg-gray-800 px-4 py-3 text-sm text-gray-800 dark:text-gray-200 space-y-2 shadow-md">';
         foreach ($activeFiltersMessages as $message) {
             $html .= "<div>{$message}</div>"; // Each filter on a new line within the styled box
         }
         $html .= '</div>';
-    
+
         return $html;
     }
 }

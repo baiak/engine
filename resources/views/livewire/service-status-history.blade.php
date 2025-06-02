@@ -54,7 +54,7 @@
                         x-show="open"
                         x-transition.duration.1000ms
                         x-transition.scale.origin.top
-                        style="/*background-color:#cccbcb*/;
+                        style="/*background-color:#cccbcb*/
                                 color: #d6d6d6">
                         <div class="flex flex-col items-center" style="margin-right: 10px">
                             <!-- Imagem de perfil redonda -->

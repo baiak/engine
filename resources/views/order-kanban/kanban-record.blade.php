@@ -42,6 +42,7 @@
                 <div>Cliente: <strong>{{ $record->client->name }}</strong></div>
                 <div>Veículo: <strong>{{ $record->vehicle->factory }}/{{ $record->vehicle->model }}</strong></div>
                 <div>Prazo da ordem: <strong>{{ \Carbon\Carbon::parse($record->deadline)->format('d/m/Y') }}</strong></div>
+                <div>Status: <strong>{{$record->status}}</strong></div>
             </div>
 
             <div x-show="open" x-transition class="mt-3 text-sm text-gray-700 space-y-1">

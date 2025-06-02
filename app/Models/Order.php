@@ -74,7 +74,7 @@ class Order extends Model implements Sortable
     {
         $orderNumber = $this->order_number ?? 'Sem número';
         $clientName = $this->client->name ?? 'Cliente Desconhecido';
-        $vehicleModel = $this->vehicle->factory->motor . '/' . $this->vehicle->model ?? 'Carro Desconhecido';
+        $vehicleModel = $this->vehicle->factory . '/' . $this->vehicle->model ?? 'Carro Desconhecido';
 
         return "{$orderNumber} - {$vehicleModel} - {$clientName}";
     }

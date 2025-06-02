@@ -59,7 +59,7 @@ class ServiceObserver
         }
     }
 
-    public function updated(Service $service): void
+    public function saved(Service $service): void
     {
         DB::table('service_audit_logs')->insert([
             'service_id' => $service->id,

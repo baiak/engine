@@ -147,7 +147,7 @@
                                 <span style="color: #555;">Descrição:</span>
                             </p>
                             <div style="border-radius: 6px; padding: 10px; margin-left: 10px; font-size: 13px; line-height: 1.5; color: #444;">
-                                {!! htmlspecialchars($record->description) !!}
+                                {!! $record->description !!}
                             </div>
                             @endif
                         </div>

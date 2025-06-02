@@ -62,7 +62,11 @@ class OrdersKanbanBoard extends KanbanBoard
 
                     Select::make('client_id')
                         ->label('Cliente')
-                        ->options(Client::all()->pluck('name', 'id'))
+                        ->options(
+                            Client::all()->mapWithKeys(function ($client) {
+                                return [$client->id => $client->name ?? 'Cliente sem nome'];
+                            })
+                        )
                         ->createOptionForm([
                             TextInput::make('name')
                                 ->required()
@@ -81,7 +85,11 @@ class OrdersKanbanBoard extends KanbanBoard
 
                     Select::make('vehicle_id')
                         ->label('Veículo')
-                        ->options(Vehicle::all()->pluck('title', 'id'))
+                        ->options(
+                            Vehicle::all()->mapWithKeys(function ($vehicle) {
+                                return [$vehicle->id => $vehicle->formatted_vehicle ?? 'Veículo sem título']; // Provide a default if title is null
+                            })
+                        )
                         ->createOptionForm([
                             TextInput::make('factory')
                                 ->required()
@@ -151,7 +159,7 @@ class OrdersKanbanBoard extends KanbanBoard
                     // Refresh the page to show the new order
                     $this->redirect(OrdersKanbanBoard::getUrl());
                 }),
-                
+
             Action::make('addService')
                 ->label('Adicionar serviço em uma ordem')
                 ->icon('heroicon-o-wrench')
@@ -162,7 +170,7 @@ class OrdersKanbanBoard extends KanbanBoard
                 ->form([
                     Select::make('order_id')
                         ->label('Selecione a Ordem')
-                        ->options(function() {
+                        ->options(function () {
                             // 1. Busca as ordens filtradas com as relações necessárias para o acessor
                             $orders = Order::with(['client', 'vehicle']) // Carrega as relações
                                 ->where('status', TypeOforderStatus::aguardando_servicos->value)
@@ -181,17 +189,17 @@ class OrdersKanbanBoard extends KanbanBoard
                             $set('part_id', null);
                             $set('department_id', null);
                         }),
-                        
+
                     Select::make('part_id')
                         ->label('Peça/Componente')
                         ->options(function (callable $get) {
                             if (!$get('order_id')) return [];
-                            
+
                             $order = Order::find($get('order_id'));
                             if (!$order) return [];
-                            
+
                             $vehicleId = $order->vehicle_id;
-                            
+
                             // Filtra peças pelo veículo ou retorna todas se não houver filtro específico
                             return Part::where(function ($query) use ($vehicleId) {
                                 $query->where('vehicle_id', $vehicleId)
@@ -203,34 +211,34 @@ class OrdersKanbanBoard extends KanbanBoard
                                 ->required()
                                 ->label('Nome da Peça')
                                 ->placeholder('Ex: Motor, Suspensão, etc'),
-                                
+
                             TextInput::make('parameters')
                                 ->label('Parâmetros')
                                 ->placeholder('Informações técnicas sobre a peça'),
-                                
-                         
+
+
                         ])
                         ->createOptionUsing(function (array $data, callable $get) {
                             $order = Order::find($get('order_id'));
                             if (!$order) return null;
-                            
+
                             $data['vehicle_id'] = $order->vehicle_id;
                             return Part::create($data)->getKey();
                         })
                         ->required()
                         ->searchable(),
-                        
+
                     Select::make('department_id')
                         ->label('Departamento')
                         ->options(Department::all()->pluck('title', 'id'))
                         ->required()
                         ->searchable(),
-                        
+
                     Select::make('user_id')
                         ->label('Responsável')
                         ->options(function (callable $get) {
                             if (!$get('department_id')) return User::all()->pluck('name', 'id');
-                            
+
                             // Filtra usuários pelo departamento selecionado
                             return Department::find($get('department_id'))
                                 ->activeUsers()
@@ -238,14 +246,14 @@ class OrdersKanbanBoard extends KanbanBoard
                         })
                         ->required()
                         ->searchable(),
-                        
+
                     DatePicker::make('deadline')
                         ->label('Prazo de Entrega')
                         ->required()
                         ->minDate(now()->startOfDay()) // Ensures the date is not before today
                         ->validationMessages([
                             'minDate' => 'O prazo de entrega não pode ser uma data anterior à data atual.',
-                        ]) ->maxDate(function (callable $get) {
+                        ])->maxDate(function (callable $get) {
                             $orderId = $get('order_id');
                             if ($orderId) {
                                 $order = Order::find($orderId);
@@ -262,7 +270,7 @@ class OrdersKanbanBoard extends KanbanBoard
                             if ($orderId) {
                                 $order = Order::find($orderId);
                                 if ($order && $order->deadline) {
-                                    try {                                        
+                                    try {
                                         $deadlineDate = $order->deadline instanceof Carbon ? $order->deadline : Carbon::parse($order->deadline);
                                         return 'O prazo máximo conforme a ordem é ' . $deadlineDate->format('d/m/Y') . '.';
                                     } catch (\Exception $e) {
@@ -275,18 +283,18 @@ class OrdersKanbanBoard extends KanbanBoard
                             return 'Selecione uma ordem para visualizar o prazo máximo.';
                         })
                         ->reactive(),
-                        
+
                     RichEditor::make('description')
                         ->label('Descrição do Serviço')
                         ->required()
                         ->placeholder('Detalhes do serviço a ser realizado'),
 
-    
+
                 ])
                 ->action(function (array $data): void {
                     // Inicia uma transação para garantir integridade dos dados
                     DB::beginTransaction();
-                    
+
                     try {
                         // Cria o serviço
                         $service = Service::create([
@@ -299,23 +307,23 @@ class OrdersKanbanBoard extends KanbanBoard
                             'order_number' => Order::find($data['order_id'])->order_number,
                             'user_id' => $data['user_id'],
                         ]);
-                        
-   
-                        
+
+
+
                         DB::commit();
-                        
+
                         // Mostra notificação de sucesso
                         Notification::make()
                             ->title('Serviço adicionado com sucesso!')
                             ->body('O serviço foi adicionado à ordem #' . Order::find($data['order_id'])->order_number)
                             ->success()
                             ->send();
-                            
+
                         // Recarrega a página para mostrar a atualização
                         $this->redirect(OrdersKanbanBoard::getUrl());
                     } catch (\Exception $e) {
                         DB::rollBack();
-                        
+
                         // Mostra notificação de erro
                         Notification::make()
                             ->title('Erro ao adicionar serviço')
@@ -365,8 +373,6 @@ class OrdersKanbanBoard extends KanbanBoard
                 // Se o card principal (Service) precisa ser re-renderizado devido a essa mudança:
                 $this->dispatch('laborStatusUpdated', recordId: $recordId)->self(); // Notifica o próprio componente para se atualizar
                 $this->dispatch('notify', message: 'Status da mão de obra atualizado com sucesso!', type: 'success');
-
-
             } catch (\ValueError $e) {
                 // Lidar com o caso de um valor de status inválido
                 $this->dispatch('notify', message: 'Erro: Status inválido selecionado.', type: 'danger');

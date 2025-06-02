@@ -12,6 +12,7 @@ use Filament\Infolists\Components; // Import the main Components namespace
 use Filament\Infolists\Components\Fieldset;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\ViewEntry;
 
 class ViewLaborImpediment extends ViewRecord
 {
@@ -32,27 +33,27 @@ class ViewLaborImpediment extends ViewRecord
                 Section::make()
                     ->schema([
                         Fieldset::make('')
-                        ->label(fn ($record)=> 'OS nº ' . $record->serviceLabor->service->order->order_number)
+                            ->label(fn($record) => 'OS nº ' . $record->serviceLabor->service->order->order_number)
                             ->schema([
                                 TextEntry::make('serviceLabor.service.order.client.name')->label('Cliente'),
                                 TextEntry::make('serviceLabor.service.order.vehicle.formatted_vehicle')->label('Veículo'),
                                 TextEntry::make('serviceLabor.service.order.deadline')
-                                   ->label('Prazo')
-                                   ->state(
-                                    function ($record) {
-                                        $deadline = $record->serviceLabor->service->order->deadline;
-                                        if(!$deadline) {
-                                            return 'Sem prazo definido';
+                                    ->label('Prazo')
+                                    ->state(
+                                        function ($record) {
+                                            $deadline = $record->serviceLabor->service->order->deadline;
+                                            if (!$deadline) {
+                                                return 'Sem prazo definido';
+                                            }
+                                            $date = \Carbon\Carbon::parse($deadline)->format('d/m/Y');
+                                            $diff = \Carbon\Carbon::parse($deadline)->diffForHumans(now(), [
+                                                'syntax' => \Carbon\CarbonInterface::DIFF_RELATIVE_TO_NOW,
+                                                'parts' => 2,
+                                                'join' => true,
+                                            ]);
+                                            return "{$date} - ({$diff})";
                                         }
-                                        $date = \Carbon\Carbon::parse($deadline)->format('d/m/Y');
-                                        $diff = \Carbon\Carbon::parse($deadline)->diffForHumans(now(), [
-                                            'syntax' => \Carbon\CarbonInterface::DIFF_RELATIVE_TO_NOW,
-                                            'parts' => 2,
-                                            'join' => true,
-                                        ]);
-                                        return "{$date} - ({$diff})";
-                                    }
-                                   )->columnSpanFull(),
+                                    )->columnSpanFull(),
                                 //TextEntry::make('serviceLabor.service.part.title')->label('Peça'),
 
                             ])
@@ -61,29 +62,12 @@ class ViewLaborImpediment extends ViewRecord
                             ->columns(2),
 
 
-                            Fieldset::make('Dados do Impedimento')
+                        Fieldset::make('Dados do Impedimento')
                             ->schema([
-                                Section::make('')
-                                   ->label(fn ($record) => 'Impedimento nº ' . $record->id)
-                                    ->schema([
-                                        TextEntry::make('')
-                                            ->label(fn ($record) => 'Peça: ' . $record->serviceLabor->service->part->title),
-                                        
-                                        TextEntry::make('')
-                                            ->label(fn ($record) => 'Reclamante: ' . app()->make('userName')($record->complainant_id)),
-                                        
-                                        TextEntry::make('status'),
-                                        
-                                        TextEntry::make('created_at')
-                                            ->label('Criado em')    
-                                            ->state(fn ($record) => $record->created_at->format('d/m/Y H:i:s')),
-                                        TextEntry::make('updated_at')
-                                            ->label('Atualizado em')
-                                            ->state(fn ($record) => $record->updated_at->format('d/m/Y H:i:s')),
-                                    ])
-                                    ->columns(3)
+                                ViewEntry::make('impediments')
+                                    ->view('components.impediments.header-wrapper')
                                     ->columnSpanFull(),
-                          
+
                             ])
                             ->columnStart(2)
                             ->columnSpan(2)
