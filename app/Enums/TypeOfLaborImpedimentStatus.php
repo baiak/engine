@@ -6,7 +6,7 @@ enum TypeOfLaborImpedimentStatus: string
     case em_aberto = 'em aberto';
     case resolvido = 'resolvido';
     case cancelado = 'cancelado';
-    case sem_solucao = 'sem solucao';
+    case sem_solucao = 'sem solução';
 
     public static function getValues(): array
     {

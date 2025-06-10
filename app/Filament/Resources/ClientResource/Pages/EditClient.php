@@ -9,6 +9,11 @@ use Filament\Resources\Pages\EditRecord;
 class EditClient extends EditRecord
 {
     protected static string $resource = ClientResource::class;
+    
+    public function getTitle(): string
+    {
+        return "Editar Cliente " . $this->record->name;
+    }
 
     protected function getHeaderActions(): array
     {

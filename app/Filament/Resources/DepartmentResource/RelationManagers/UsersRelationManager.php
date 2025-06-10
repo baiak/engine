@@ -85,6 +85,7 @@ class UsersRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->heading('Usuários do Departamento')
             ->columns([
                 Tables\Columns\ImageColumn::make('profileImg')
                     ->label('Avatar')

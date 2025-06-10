@@ -33,6 +33,12 @@ class OrdersKanbanBoard extends KanbanBoard
 
     protected static string $model = Order::class;
     protected static string $statusEnum = TypeOforderStatus::class;
+    protected static ?string $title = 'Quadro de Ordens de Serviço';
+    protected static ?string $navigationGroup = 'Quadros Kanban';
+    protected static ?string $navigationLabel = 'Quadro de Ordens de Serviço';
+    protected static ?int $navigationSort = 1;
+
+
 
 
     protected static string $headerView = 'order-kanban.kanban-header';

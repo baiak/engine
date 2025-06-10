@@ -37,24 +37,27 @@ class ViewLaborImpediment extends ViewRecord
                             ->schema([
                                 TextEntry::make('serviceLabor.service.order.client.name')->label('Cliente'),
                                 TextEntry::make('serviceLabor.service.order.vehicle.formatted_vehicle')->label('Veículo'),
-                                TextEntry::make('serviceLabor.service.order.deadline')
-                                    ->label('Prazo')
+                         
+                                TextEntry::make('serviceLabor.service.part.title')->label('Peça'),
+                                TextEntry::make('createdAtt')->label('Impedimento adicionado em:')
                                     ->state(
                                         function ($record) {
-                                            $deadline = $record->serviceLabor->service->order->deadline;
-                                            if (!$deadline) {
-                                                return 'Sem prazo definido';
-                                            }
-                                            $date = \Carbon\Carbon::parse($deadline)->format('d/m/Y');
-                                            $diff = \Carbon\Carbon::parse($deadline)->diffForHumans(now(), [
-                                                'syntax' => \Carbon\CarbonInterface::DIFF_RELATIVE_TO_NOW,
-                                                'parts' => 2,
-                                                'join' => true,
-                                            ]);
-                                            return "{$date} - ({$diff})";
+                                            return \Carbon\Carbon::parse($record->created_at)->format('d/m/Y H:i');
                                         }
-                                    )->columnSpanFull(),
-                                //TextEntry::make('serviceLabor.service.part.title')->label('Peça'),
+                                    )
+                                    ->columnSpanFull(),
+                                TextEntry::make('serviceLabor.labor.code')->label('Última atualização:')
+                                    ->state(
+                                        function ($record) {
+                                            return \Carbon\Carbon::parse($record->serviceLabor->updated_at)->format('d/m/Y H:i');
+                                        }
+                                    )
+                                    ->columnSpanFull(),
+                                TextEntry::make('serviceLabor.labor.title')->label('Mão de Obra')
+                                    ->columnSpanFull(),
+                                TextEntry::make('status')
+                                    ->label('Status do impedimento:')
+                                    ->columnSpanFull(),
 
                             ])
                             ->columnStart(1)

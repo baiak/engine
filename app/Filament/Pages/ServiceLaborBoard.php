@@ -42,6 +42,13 @@ use Livewire\Attributes\On;
     public $selectedDepartment;
     public $selectedDepartmentUser;
 
+    protected static ?string $title = 'Quadro de Mão de Obra';
+    protected static ?string $navigationGroup = 'Quadros Kanban';
+    protected static ?string $navigationLabel = 'Quadro de Mão de Obra';
+    protected static ?int $navigationSort = 3;
+    protected static ?string $navigationIcon = 'heroicon-o-cog';
+
+
     protected static string $headerView = 'service-labor-kanban.kanban-header';
     protected static string $recordView = 'service-labor-kanban.kanban-record';
     // protected static string $scriptsView = 'service-labor-kanban.kanban-scripts'; // Se não estiver usando scripts customizados específicos, pode ser desnecessário.

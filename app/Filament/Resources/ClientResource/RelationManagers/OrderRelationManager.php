@@ -27,6 +27,7 @@ class OrderRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+           ->heading('Ordens de serviços vinculadas a este cliente')
             ->recordTitleAttribute('id')
             ->columns([
                 Tables\Columns\TextColumn::make('id'),
@@ -35,7 +36,9 @@ class OrderRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                Tables\Actions\CreateAction::make()
+                ->label('Criar Ordem de Serviço')
+                ->icon('heroicon-o-plus'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

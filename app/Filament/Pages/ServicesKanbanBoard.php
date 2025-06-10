@@ -34,6 +34,15 @@ class ServicesKanbanBoard extends KanbanBoard implements HasActions
     protected static string $model = Service::class;
     protected static string $statusEnum = TypeOfServiceStatus::class;
     protected static string $recordTitleAttribute = 'formatted_title';
+    protected static ?string $title = 'Quadro de Serviços';
+    protected static ?string $navigationGroup = 'Quadros Kanban';
+    protected static ?string $navigationLabel = 'Quadro de Serviços';
+    protected static ?string $navigationIcon = 'heroicon-o-wrench';
+    protected static ?string $slug = 'services-kanban-board';
+    protected static ?int $navigationSort = 2;
+    protected static ?string $recordNavigationLabel = 'Serviço';
+    protected static ?string $recordNavigationIcon = 'heroicon-o-wrench';
+    protected static ?string $recordNavigationGroup = 'Serviços';
 
     public $selectedOrderNumber;
     public $selectedDepartment;
@@ -316,7 +325,7 @@ class ServicesKanbanBoard extends KanbanBoard implements HasActions
                             if ($orderId) {
                                 $order = Order::find($orderId);
                                 if ($order && $order->deadline) {
-                                    try {                                        
+                                    try {
                                         $deadlineDate = $order->deadline instanceof Carbon ? $order->deadline : Carbon::parse($order->deadline);
                                         return 'O prazo máximo conforme a ordem é ' . $deadlineDate->format('d/m/Y') . '.';
                                     } catch (\Exception $e) {
