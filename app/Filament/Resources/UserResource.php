@@ -18,6 +18,9 @@ class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
+    protected static ?string $modelLabel = 'Usuário';
+    protected static ?string $pluralModelLabel = 'Usuários';
+    protected static ?string $navigationGroup = 'Administração';
     protected static ?string $navigationIcon = 'heroicon-o-user-circle';
 
     public static function form(Form $form): Form
@@ -25,6 +28,7 @@ class UserResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('name')
+                    ->label('Nome Completo')
                     ->required()
                     ->maxLength(255),
                     
@@ -69,14 +73,6 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->description(fn (User $record): string => $record->email)
                     ->searchable(),
-                    
-                Tables\Columns\TextColumn::make('active_departments_count')
-                    ->label('Departamentos Ativos')
-                    ->getStateUsing(fn (User $record): int => $record->activeDepartments()->count()),
-                    
-                Tables\Columns\TextColumn::make('departments_count')
-                    ->label('Total Departamentos')
-                    ->counts('departments'),
                     
                 Tables\Columns\TextColumn::make('responsible_departments')
                     ->label('Responsável por')

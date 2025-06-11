@@ -24,7 +24,11 @@ class LaborResource extends Resource
 {
     protected static ?string $model = Labor::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $modelLabel = 'Mão de Obra';
+    protected static ?string $pluralModelLabel = 'Mãos de Obra';
+    protected static ?string $navigationGroup = 'Administração';
+
+    protected static ?string $navigationIcon = 'heroicon-o-wrench-screwdriver';
 
     public static function form(Form $form): Form
     {
@@ -39,15 +43,15 @@ class LaborResource extends Resource
                             ->visible(fn($record) => $record !== null),
 
                         Placeholder::make('Veículo')
-                            ->content(fn($record) => $record ? $record->vehicle->factory.'/'.
-                                $record->vehicle->model.'/'.$record->vehicle->motor : null)
+                            ->content(fn($record) => $record ? $record->vehicle->factory . '/' .
+                                $record->vehicle->model . '/' . $record->vehicle->motor : null)
                             ->visible(fn($record) => $record !== null),
                     ]),
 
                 Select::make('vehicle_id')
                     ->label('Veículo')
                     ->options(Vehicle::orderBy('model')->pluck('model', 'id'))
-                        ->options([
+                    ->options([
                         array_unique(
                             Vehicle::query()
                                 ->select([DB::raw("CONCAT(factory, '/', model, '/', motor) as vehicle"), 'id',])
@@ -57,22 +61,24 @@ class LaborResource extends Resource
                     ])
                     ->createOptionForm([
                         Forms\Components\TextInput::make('factory')
-                         ->label('Fabricante')
-                         ->required(),
+                            ->label('Fabricante')
+                            ->required(),
                         Forms\Components\TextInput::make('model')
-                        ->label('Modelo')
-                        ->required(),
+                            ->label('Modelo')
+                            ->required(),
                         Forms\Components\TextInput::make('motor')
-                        ->label('Motor')
-                        ->required(),
+                            ->label('Motor')
+                            ->required(),
                         Forms\Components\TextInput::make('year')
-                        ->label('Ano'),
+                            ->label('Ano'),
                         Forms\Components\TextInput::make('fuel')
-                        ->label('Combustível'),
+                            ->label('Combustível'),
 
 
                     ])
-                    ->createOptionUsing(function(array $data){ return(Vehicle::create($data));})
+                    ->createOptionUsing(function (array $data) {
+                        return (Vehicle::create($data));
+                    })
                     ->searchable()
                     ->live()
                     ->placeholder('Selecione um veículo')
@@ -108,16 +114,19 @@ class LaborResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('part.title')
+                    ->label('Peça')
                     ->numeric()
                     ->sortable()
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('vehicle.model')
-                   ->formatStateUsing(fn(Model $record)=>
-                   $record->vehicle->factory.'/'.$record->vehicle->model.'/'.$record->vehicle->motor)
+                    ->label('Veículo')
+                    ->formatStateUsing(fn(Model $record) =>
+                    $record->vehicle->factory . '/' . $record->vehicle->model . '/' . $record->vehicle->motor)
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('title')
+                    ->label('Mão de Obra')
                     ->searchable(),
 
             ])

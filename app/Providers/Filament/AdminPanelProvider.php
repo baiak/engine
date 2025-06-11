@@ -74,7 +74,12 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+            ])
+            ->navigationGroups([
+                'Quadros kanban',
+                'Administração',    
+                ]
+            );
 
             //->databaseNotifications(true)
         /*->renderHook(PanelsRenderHook::TOPBAR_END, function () {

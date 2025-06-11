@@ -20,6 +20,7 @@ class ClientResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
     protected static ?string $pluralModelLabel = 'Clientes';
+    protected static ?string $navigationGroup = 'Administração';
     protected static ?string $title = 'Cliente';
 
     public static function form(Form $form): Form

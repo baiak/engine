@@ -58,6 +58,7 @@
                 <div>Cliente: <strong>{{ $record->order->client->name }}</strong></div>
                 <div>Veículo: <strong>{{ $record->order->vehicle->formatted_vehicle }}</strong></div>
                 <div>Prazo: <strong>{{ \Carbon\Carbon::parse($record->deadline)->format('d/m/Y') }}</strong></div>
+                <div>Lançado em: <strong>{{ \Carbon\Carbon::parse($record->created_at)->format('d/m/Y - H:i:s') }}</strong></div>
                 <div>Status: <strong>{{$record->status}}</strong></div>
 
 

@@ -27,7 +27,11 @@ class OrderResource extends Resource
 {
     protected static ?string $model = Order::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $modelLabel = 'Ordem de Serviço';
+    protected static ?string $pluralModelLabel = 'Ordens de Serviço';
+    protected static ?string $navigationGroup = 'Administração';
+
+    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
 
     public static function form(Form $form): Form
     {
@@ -51,8 +55,8 @@ class OrderResource extends Resource
                         Forms\Components\Placeholder::make('Veículo:')
                             ->content(function ($record) {
                                 return $record->vehicle->factory . '/' .
-                                       $record->vehicle->model . '/' .
-                                       $record->vehicle->motor;
+                                    $record->vehicle->model . '/' .
+                                    $record->vehicle->motor;
                             }),
 
                         Forms\Components\Placeholder::make('Status atual:')
@@ -78,11 +82,11 @@ class OrderResource extends Resource
                         Forms\Components\Hidden::make('user_id')
                             ->required()
                             ->default(Auth::user()?->id),
-                           // ->hidden(fn(string $operation): bool => $operation === 'edit'),
+                        // ->hidden(fn(string $operation): bool => $operation === 'edit'),
 
 
                         Select::make('client_id')
-                            ->columnSpan(['sm'=> 2])
+                            ->columnSpan(['sm' => 2])
                             ->label('Cliente')
                             ->options(Client::orderBy('name')->pluck('name', 'id'))
                             ->searchable()
@@ -100,7 +104,7 @@ class OrderResource extends Resource
                             ->hidden(fn(string $operation): bool => $operation === 'edit'),
 
                         Forms\Components\Select::make('vehicle_id')
-                            ->columnSpan(['sm'=> 2])
+                            ->columnSpan(['sm' => 2])
 
                             ->label('Veículo')
                             ->live()
@@ -108,7 +112,7 @@ class OrderResource extends Resource
                                 array_unique(
                                     Vehicle::query()
                                         ->select([DB::raw("CONCAT(factory, '/', model, '/', motor) as vehicle"), 'id',])
-->pluck('vehicle', 'id')
+                                        ->pluck('vehicle', 'id')
                                         ->toArray()
                                 )
                             ])
@@ -118,19 +122,18 @@ class OrderResource extends Resource
                                 Forms\Components\TextInput::make('model'),
                                 Forms\Components\TextInput::make('motor'),
                             ])
-                            ->createOptionUsing(function($data):void
-                            {
+                            ->createOptionUsing(function ($data): void {
                                 Vehicle::create($data);
                             })
                             ->hidden(fn(string $operation): bool => $operation === 'edit'),
 
                         Forms\Components\TextInput::make('order_number')
                             ->extraInputAttributes(['style' => 'color: #778899'])
-                            ->columnSpan(['sm'=> 1])
+                            ->columnSpan(['sm' => 1])
                             ->label('Número da ordem')
                             ->required()
                             ->maxLength(255),
-                            //->hidden(fn(string $operation): bool => $operation === 'edit'),
+                        //->hidden(fn(string $operation): bool => $operation === 'edit'),
 
 
                         Forms\Components\DatePicker::make('deadline')
@@ -172,6 +175,7 @@ class OrderResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('vehicle.factory')
+                    ->label('Fabricante')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
@@ -180,6 +184,7 @@ class OrderResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('vehicle.model')
+                    ->label('Veículo')
                     ->getStateUsing(fn($record) => $record->vehicle->factory . ' / ' .
                         $record->vehicle->model . ' / ' .
                         $record->vehicle->motor)
@@ -188,9 +193,11 @@ class OrderResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('order_number')
+                    ->label('Nº Ordem')
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('deadline')
+                    ->label('Prazo')
                     ->since()
                     ->dateTime()
                     ->sortable(),

@@ -23,11 +23,15 @@ class PartResource extends Resource
 {
     protected static ?string $model = Part::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $modelLabel = 'Peça';
+    protected static ?string $pluralModelLabel = 'Peças';
+    protected static ?string $navigationGroup = 'Administração';
+
+    protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
     public static function getCleanOptionString(Model $model): string
     {
         return (
-        view('Components.select-user-result')
+            view('Components.select-user-result')
             ->with('name', $model?->name)
             ->with('email', $model?->email)
             ->with('image', $model?->profileImg)
@@ -38,7 +42,7 @@ class PartResource extends Resource
     {
         return $form
             ->schema([
-               /* Select::make('user')
+                /* Select::make('user')
                     ->label('Selecione um corno')
                     ->searchable()
                     ->allowHtml()
@@ -107,8 +111,10 @@ class PartResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('title')
+                    ->label('Peça')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('vehicle.model')
+                    ->label('Veículo')
                     ->getStateUsing(fn($record) => $record->vehicle->factory . ' / ' .
                         $record->vehicle->model . ' / ' .
                         $record->vehicle->motor)

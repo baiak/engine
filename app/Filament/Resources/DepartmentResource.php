@@ -25,6 +25,7 @@ class DepartmentResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-folder';
     protected static ?string $pluralModelLabel = 'Departamentos';
     protected static ?string $title = 'Departamento';
+    protected static ?string $navigationGroup = 'Administração';
     
     protected static ?string $recordTitleAttribute = 'Departamento ';
 

@@ -38,8 +38,11 @@ use Nette\Utils\Html;
 class ServiceResource extends Resource
 {
     protected static ?string $model = Service::class;
-
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    
+    protected static ?string $modelLabel = 'Serviço';
+    protected static ?string $pluralModelLabel = 'Serviços';
+    protected static ?string $navigationGroup = 'Administração';
+    protected static ?string $navigationIcon = 'heroicon-o-wrench';
 
     public static function form(Form $form): Form
     {
@@ -252,6 +255,7 @@ class ServiceResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('order.order_number')
+                    ->label('Nº Ordem')
                     ->searchable()
                     ->tooltip(function ($record) {
                         return ('Cliente:' . $record->order->client->name .
@@ -263,8 +267,10 @@ class ServiceResource extends Resource
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('part.title')
+                    ->label('Peça')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('deadline')
+                    ->label('Prazo')
                     ->date()
                     ->since()
                     ->sortable(),

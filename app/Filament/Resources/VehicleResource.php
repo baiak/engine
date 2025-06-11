@@ -16,8 +16,11 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class VehicleResource extends Resource
 {
     protected static ?string $model = Vehicle::class;
+    protected static ?string $modelLabel = 'Veículo';
+    protected static ?string $pluralModelLabel = 'Veículos';
+    protected static ?string $navigationGroup = 'Administração';
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-truck';
 
     public static function form(Form $form): Form
     {
@@ -56,16 +59,26 @@ class VehicleResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('factory')
+                    ->label('Fábricante')
+                    ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('model')
+                    ->label('Modelo')
+                    ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('year')
+                    ->label('Ano')
+                    ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('motor')
+                
                     ->searchable(),
                 Tables\Columns\TextColumn::make('fuel')
+                    ->label('Combustível')
+                    ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('infos')
+                    ->label('Informações adicionais')
                     ->searchable(),
             ])
             ->filters([
