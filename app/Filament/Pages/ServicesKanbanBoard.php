@@ -24,6 +24,7 @@ use App\Models\Part;
 use App\Enums\TypeOfOrderStatus; // Corrected import for TypeOfOrderStatus
 use Filament\Actions\Action;
 use Filament\Forms\Components\Fieldset;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Mokhosh\FilamentKanban\Pages\KanbanBoard;
 use Livewire\Attributes\On;
@@ -342,22 +343,23 @@ class ServicesKanbanBoard extends KanbanBoard implements HasActions
                     RichEditor::make('description')
                         ->label('Descrição do Serviço')
                         ->required()
-                        ->placeholder('Detalhes do serviço a ser realizado'),
-
-
-                ])
+                        ->placeholder('Detalhes do serviço a ser realizado'),   
+                    Hidden::make('status')
+                        ->default(TypeOfServiceStatus::pendente->value)                    
+                        ])
                 ->action(function (array $data): void {
                     // Inicia uma transação para garantir integridade dos dados
                     DB::beginTransaction();
 
                     try {
+                        //dd($data);
                         // Cria o serviço
                         $service = Service::create([
                             'order_id' => $data['order_id'],
                             'part_id' => $data['part_id'],
                             'department_id' => $data['department_id'],
                             'deadline' => $data['deadline'],
-                            'status' => TypeOfServiceStatus::pendente->value,
+                            'status' => $data['status'],
                             'description' => $data['description'],
                             'order_number' => Order::find($data['order_id'])->order_number,
                             'user_id' => $data['user_id'],
@@ -398,7 +400,7 @@ class ServicesKanbanBoard extends KanbanBoard implements HasActions
             'order.vehicle',
             'department',
             'user', // Assuming Service has a direct user_id for the person responsible for the service itself
-            'part',
+            'part',            
             'serviceLabors.labor', // Eager load labors within service
             'serviceLabors.user',  // Eager load user assigned to the labor
             'serviceLabors.observations' // Eager load observations for each labor

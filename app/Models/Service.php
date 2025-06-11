@@ -31,7 +31,9 @@ class Service extends Model implements Sortable
         'description',
         'order_number',
         'user_id',
-        'approvedAt'
+        'approvedAt',
+        'created_at',
+        'updated_at',	
     ];
     public function user()
     {
@@ -146,6 +148,6 @@ class Service extends Model implements Sortable
 
 
     protected $casts = [
-        'status' => TypeOfServiceStatus::class
+       'status' => TypeOfServiceStatus::class
     ];
 }

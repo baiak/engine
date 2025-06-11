@@ -24,6 +24,8 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Filament\View\PanelsRenderHook;
 use Illuminate\View\View;
 use Livewire\Livewire;
+use App\Filament\Widgets\StatsOverview;
+
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -55,8 +57,8 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
-                Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
+                Widgets\AccountWidget::class,                
+                StatsOverview::class,
             ])
             ->font(false)
             ->middleware([

@@ -67,9 +67,12 @@
 
 
                         <div>
+                            @if(isset($oldValues['created_at']))
+                           
 
                             {{ \Carbon\Carbon::parse($oldValues['created_at'])->format('d/m/Y - H:i') }}<br/>
                             <strong>Status:</strong> {{ $oldValues['status'] }}
+                            @endif
                         </div>
 
                     </fieldset>
@@ -93,9 +96,10 @@
 
                             </div>
                         </div>
-                        <div>
+                        <div> @if(isset($newValues['updated_at']))
                             {{ $item->user->name }} - {{ \Carbon\Carbon::parse($newValues['updated_at'])->format('d/m/Y - H:i') }}<br/>
                             <strong>Status:</strong> {{ $newValues['status'] }}
+                            @endif
                         </div>
                     </fieldset>
                 @endif
