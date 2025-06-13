@@ -57,6 +57,7 @@ class DepartmentsRelationManager extends RelationManager
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('title')
+                    ->label('Departamento')
                     ->searchable(),
                     
                 Tables\Columns\ToggleColumn::make('pivot.is_responsible')

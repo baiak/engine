@@ -118,7 +118,7 @@ class LaborImpedimentResource extends Resource
                         return \App\Models\ServiceLabor::query()
                             ->where('service_id', $serviceId)
                             ->whereIn('status', ['pendente', 'aguardando aprovação', 'aprovado', 'em andamento'])
-                            ->with('labor','service.part') // Eager load labor for its title
+                            ->with('labor', 'service.part') // Eager load labor for its title
                             ->get()
                             ->mapWithKeys(function (\App\Models\ServiceLabor $sl) {
                                 $laborTitle = $sl->labor ? ($sl->labor->title ?? 'Título Indisponível') : 'Mão de Obra N/A'; // (Adjusted)
@@ -257,5 +257,19 @@ class LaborImpedimentResource extends Resource
             'view' => Pages\ViewLaborImpediment::route('/{record}'), // View page is good for showing details including logs
             //'edit' => Pages\EditLaborImpediment::route('/{record}/edit'),
         ];
+    }
+    public static function getNavigationBadge(): ?string
+    {
+        // Acessa o modelo da classe (LaborImpediment)
+        // e conta os registros onde o status é 'em_aberto'
+        $count = static::getModel()::where('status', \App\Enums\TypeOfLaborImpedimentStatus::em_aberto)->count();
+
+        // Retorna a contagem como string se for maior que zero, caso contrário não exibe o badge
+        return $count > 0 ? (string) $count : null;
+    }
+    public static function getNavigationBadgeColor(): ?string
+    {
+        // Retorna a cor do badge. Opções: 'primary', 'success', 'warning', 'danger', 'info'
+        return 'warning';
     }
 }
