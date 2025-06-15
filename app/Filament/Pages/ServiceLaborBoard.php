@@ -14,7 +14,6 @@ use App\Models\Service;
 use App\Models\ServiceLabor;
 use App\Models\User;
 use App\Models\Observation;
-// Removido: use App\Traits\HasHeaderActions; // HasHeaderActions não é um Trait padrão do Filament para Pages. InteractsWithActions já cobre as ações.
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -64,7 +63,7 @@ use Livewire\Attributes\On;
     #[On('status-changed')]
     public function statusChanged($recordId, $status, $fromOrderedIds = [], $toOrderedIds = []): void
     {
-        // ... (código existente do statusChanged)
+        
         $newStatus = $status;
         $fromOrderedIds = is_array($fromOrderedIds) ? $fromOrderedIds : [];
         $toOrderedIds = is_array($toOrderedIds) ? $toOrderedIds : [];
@@ -85,9 +84,14 @@ use Livewire\Attributes\On;
         }
         $statusColumn = $this->getStatusColumn();
         $originalStatus = $record->{$statusColumn};
-        if (($originalStatus === TypeOfLaborStatus::cancelado->value && $safeNewStatus !== TypeOfLaborStatus::cancelado->value) || $originalStatus === TypeOfLaborStatus::finalizado->value) {
-            Notification::make()->title('Ação Não Permitida')->body('Uma mão de obra cancelada ou finalizada não pode ter seu status alterado.')->warning()->send();
-            $this->dispatch('$refresh'); // Mantém o refresh aqui pois é uma ação direta no card, não em modal de filtro
+        $lockedStatuses = [
+            TypeOfLaborStatus::cancelado->value,
+            TypeOfLaborStatus::finalizado->value
+            ];
+        if (in_array($originalStatus, $lockedStatuses, true) {
+            Notification::make()->title('Ação Não Permitida')
+            ->body('Uma mão de obra cancelada ou finalizada não pode ter seu status alterado.')->warning()->send();
+            $this->dispatch('$refresh');
             return;
         }
         $record->update([$statusColumn => $safeNewStatus]);
