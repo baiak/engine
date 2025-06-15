@@ -50,7 +50,7 @@ use Livewire\Attributes\On;
 
     protected static string $headerView = 'service-labor-kanban.kanban-header';
     protected static string $recordView = 'service-labor-kanban.kanban-record';
-    // protected static string $scriptsView = 'service-labor-kanban.kanban-scripts'; // Se não estiver usando scripts customizados específicos, pode ser desnecessário.
+    
 
     public ?ServiceLabor $selectedLaborForAction = null;
     public ?ServiceLabor $selectedLaborForObservation = null;
@@ -72,7 +72,8 @@ use Livewire\Attributes\On;
         $modelClass = static::$model;
 
         if (!class_exists($modelClass)) {
-            Notification::make()->title('Erro de Configuração')->body("A classe do modelo '{$modelClass}' não foi encontrada.")->danger()->send();
+            Notification::make()->title('Erro de Configuração')
+                ->body("A classe do modelo '{$modelClass}' não foi encontrada.")->danger()->send();
             $this->dispatch('$refresh');
             return;
         }
