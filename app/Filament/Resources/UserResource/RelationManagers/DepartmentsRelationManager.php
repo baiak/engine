@@ -17,6 +17,7 @@ class DepartmentsRelationManager extends RelationManager
     protected static string $relationship = 'departments';
 
     protected static ?string $recordTitleAttribute = 'title';
+    protected static ?string $title = 'Departamento';
 
     public function form(Form $form): Form
     {
