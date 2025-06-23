@@ -98,6 +98,8 @@ use App\livewire\LaborImpedimentForm;
 
     protected $listeners = ['statusUpdated', 'fetchServiceLaborLogs', 'submit', 'countImpediments', 'totalsUpdated'];
 
+    protected static ?string $title = 'Lista de serviços';
+
     public function __construct()
     {
         Log::info("ServiceRelationManager carregado."); // Log para confirmar carregamento
@@ -377,7 +379,7 @@ use App\livewire\LaborImpedimentForm;
         ];
     }
 
-    public static function getCleanOptionString(Model $model): string
+    /*public static function getCleanOptionString(Model $model): string
     {
         return (
         view('Components.select-user-result')
@@ -386,7 +388,7 @@ use App\livewire\LaborImpedimentForm;
             ->with('image', $model?->profileImg)
             ->render()
         );
-    }
+    }*/
 
     public function form(Form $form): Form
     {
@@ -395,7 +397,7 @@ use App\livewire\LaborImpedimentForm;
                 Grid::make(1)
             ->schema([                              
             
-                Forms\Components\TextInput::make('order_number')
+                Forms\Components\Hidden::make('order_number')
                     ->default(function (RelationManager $livewire) {
                         return ($livewire->getOwnerRecord()->order_number);
                     })
@@ -608,7 +610,8 @@ use App\livewire\LaborImpedimentForm;
                             ])
                             ->actions([
                                 Tables\Actions\ViewAction::make()
-                                    ->label('Mão de obras'),
+                                    ->label('Adicionar Mão de obra')
+                                    ->modalHeading('Adicionar Mão de obra'),
                                 Tables\Actions\EditAction::make()
                                     ->label('Status do serviço'),
                                 Tables\Actions\DeleteAction::make(),
@@ -639,9 +642,13 @@ use App\livewire\LaborImpedimentForm;
                     ->schema([
                         TextEntry::make('part.title')
                             ->label('Peça:'),
+                        TextEntry::make('description')
+                            ->label('Detalhes do Serviço:')
+                            ->html(),    
                         Livewire::make(ListLabor::class)
-                            ->columnSpan(3),
-                    ])->columns(4)
+                            ->columnSpanFull(),
+                            
+                    ])
             ]);
     }
 }

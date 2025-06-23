@@ -27,21 +27,26 @@ class VehicleResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('factory')
+                    ->label('Fabricante')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('model')
+                    ->label('Modelo')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('year')
+                    ->label('Ano')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('motor')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('fuel')
+                    ->label('Combustível')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('infos')
+                    ->label('Informações adicionais')
                     ->maxLength(255),
             ]);
     }
@@ -71,7 +76,7 @@ class VehicleResource extends Resource
                     ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('motor')
-                
+
                     ->searchable(),
                 Tables\Columns\TextColumn::make('fuel')
                     ->label('Combustível')

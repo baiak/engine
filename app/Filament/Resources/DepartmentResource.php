@@ -40,7 +40,7 @@ class DepartmentResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('title')
-                    ->label('Departamento')
+                    ->label('Título do departamento')
                     ->required()
                     ->maxLength(255)
                     ->unique(ignoreRecord: true),
@@ -145,7 +145,7 @@ class DepartmentResource extends Resource
     {
         return [
             'index' => Pages\ListDepartments::route('/'),
-            'create' => Pages\CreateDepartment::route('/create'),
+            //'create' => Pages\CreateDepartment::route('/create'),
             'edit' => Pages\EditDepartment::route('/{record}/edit'),
         ];
     }

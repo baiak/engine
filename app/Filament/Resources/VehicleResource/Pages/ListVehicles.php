@@ -13,7 +13,11 @@ class ListVehicles extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+            ->label('Adicionar veículo')
+                ->icon('heroicon-o-plus-circle')
+                ->color('primary')
+                ->tooltip('Adicionar novo veículo'),
         ];
     }
 }

@@ -13,8 +13,8 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
-use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Tables;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -33,6 +33,7 @@ class LaborResource extends Resource
     public static function form(Form $form): Form
     {
         return $form
+
             ->schema([
                 //section com placeholders exibidos apenas no modal de edição
                 section::make('Dados da peça e do veículo')
@@ -49,6 +50,7 @@ class LaborResource extends Resource
                     ]),
 
                 Select::make('vehicle_id')
+                    ->required()
                     ->label('Veículo')
                     ->options(Vehicle::orderBy('model')->pluck('model', 'id'))
                     ->options([
@@ -73,8 +75,6 @@ class LaborResource extends Resource
                             ->label('Ano'),
                         Forms\Components\TextInput::make('fuel')
                             ->label('Combustível'),
-
-
                     ])
                     ->createOptionUsing(function (array $data) {
                         return (Vehicle::create($data));
@@ -86,17 +86,53 @@ class LaborResource extends Resource
 
 
                 Select::make('part_id')
-                    ->options(function (callable $get) {
+                    ->required()
+                    ->label('Peça')
+                    ->native(false)
+                    ->options(function (callable $get, $state) { // Adicione $state aqui
                         $vehicle_id = $get('vehicle_id');
-                        return Part::where('vehicle_id', $vehicle_id)->pluck('title', 'id');
+                        $parts = Part::where('vehicle_id', $vehicle_id)->pluck('title', 'id');
+
+                        // Se o estado atual (valor selecionado) não estiver nas opções, adicione-o.
+                        // Isso é útil se a opção já selecionada não for mais elegível após uma mudança de veículo,
+                        // mas queremos manter a exibição até que o usuário mude.
+                        if ($state && !$parts->has($state)) {
+                            $selectedPart = Part::find($state);
+                            if ($selectedPart) {
+                                $parts->put($selectedPart->id, $selectedPart->title);
+                            }
+                        }
+                        return $parts;
                     })
+
+                    ->createOptionForm([
+                        Section::make('Dados da Peça')
+                            ->schema([
+                                Forms\Components\TextInput::make('title')
+                                    ->label('Título')
+                                    ->required(),
+                                Forms\Components\TextInput::make('parameters')
+                                    ->label('Parâmetros'),
+                                Forms\Components\Hidden::make('vehicle_id')
+                                    ->default(fn(callable $get) => $get('vehicle_id')),
+                            ]),
+                    ])
+                    ->createOptionUsing(function (array $data, callable $get) {
+                        $data['vehicle_id'] = $get('vehicle_id');
+                        return Part::create($data);
+                    })
+
                     ->hidden(fn(string $operation): bool => $operation === 'edit')
-                    ->reactive(),
+                    ->reactive()
+                    ->disabled(fn(callable $get) => $get('vehicle_id') === null),
 
                 Forms\Components\TextInput::make('title')
+                    ->label('Mão de Obra')
+                    ->placeholder('Ex: Retificiar colo de mancal p/ 0.25')
                     ->required()
                     ->maxLength(255),
-            ]);
+            ])
+            ->columns(1);
     }
 
     public static function table(Table $table): Table
@@ -154,8 +190,8 @@ class LaborResource extends Resource
     {
         return [
             'index' => Pages\ListLabors::route('/'),
-            'create' => Pages\CreateLabor::route('/create'),
-            'edit' => Pages\EditLabor::route('/{record}/edit'),
+            // 'create' => Pages\CreateLabor::route('/create'),
+            // 'edit' => Pages\EditLabor::route('/{record}/edit'),
         ];
     }
 }

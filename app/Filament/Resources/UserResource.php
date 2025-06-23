@@ -31,31 +31,34 @@ class UserResource extends Resource
                     ->label('Nome Completo')
                     ->required()
                     ->maxLength(255),
-                    
+
                 Forms\Components\TextInput::make('email')
                     ->email()
                     ->required()
                     ->maxLength(255)
                     ->unique(ignoreRecord: true),
-                    
+
                 Forms\Components\TextInput::make('password')
+                    ->label('Senha')
                     ->password()
-                    ->required(fn ($record) => !$record)
-                    ->dehydrated(fn ($state) => filled($state))
+                    ->required(fn($record) => !$record)
+                    ->dehydrated(fn($state) => filled($state))
                     ->maxLength(255)
                     ->rule(Password::default()),
-                    
+
                 Forms\Components\TextInput::make('password_confirmation')
+                    ->label('Confirmação de Senha')
                     ->password()
                     ->same('password')
                     ->requiredWith('password')
                     ->dehydrated(false),
-                    
+
                 Forms\Components\FileUpload::make('profileImg')
+                    ->label('Avatar')
                     ->avatar()
                     ->imageEditor()
                     ->directory('user-profiles'),
-                    
+
                 Toggle::make('is_admin')
                     ->label('Administrador')
                     ->inline(false),
@@ -69,18 +72,18 @@ class UserResource extends Resource
                 Tables\Columns\ImageColumn::make('profileImg')
                     ->label('Avatar')
                     ->circular(),
-                    
+
                 Tables\Columns\TextColumn::make('name')
-                    ->description(fn (User $record): string => $record->email)
+                    ->description(fn(User $record): string => $record->email)
                     ->searchable(),
-                    
+
                 Tables\Columns\TextColumn::make('responsible_departments')
                     ->label('Responsável por')
                     ->getStateUsing(function (User $record): string {
                         $depts = $record->responsibleDepartments()->pluck('title')->toArray();
                         return count($depts) ? implode(', ', $depts) : 'Nenhum';
                     }),
-                    
+
                 Tables\Columns\IconColumn::make('is_admin')
                     ->label('Admin')
                     ->boolean(),
@@ -102,7 +105,7 @@ class UserResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                     Tables\Actions\BulkAction::make('makeAdmin')
                         ->label('Tornar administrador')
-                        ->action(fn (array $records) => User::whereIn('id', $records)->update(['is_admin' => true]))
+                        ->action(fn(array $records) => User::whereIn('id', $records)->update(['is_admin' => true]))
                         ->requiresConfirmation(),
                 ]),
             ]);

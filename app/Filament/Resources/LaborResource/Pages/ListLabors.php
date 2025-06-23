@@ -13,7 +13,10 @@ class ListLabors extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+            ->label('Adicionar mão de obra')
+            ->icon('heroicon-o-wrench-screwdriver')
+            ->modalWidth('md'),
         ];
     }
 }

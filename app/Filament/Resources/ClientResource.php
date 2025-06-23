@@ -27,24 +27,29 @@ class ClientResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->label('Nome do Cliente')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('city')
-                    ->label('Cidade - Estado')
-                    ->required()
-                    ->maxLength(255),
+                Forms\Components\Section::make('Informações do Cliente') // Título da seção
+                    ->schema([
+                        Forms\Components\TextInput::make('name')
+                            ->label('Nome do Cliente')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('city')
+                            ->label('Cidade - Estado')
+                            ->required()
+                            ->maxLength(255),
+                    ])
+                    ->columns(1), // Define que os campos dentro da seção terão 1 coluna
             ]);
     }
-
     public static function table(Table $table): Table
     {
         return $table
-        ->headerActions([
+            ->headerActions([
                 Tables\Actions\CreateAction::make()
                     ->label('Adicionar Cliente')
-                    ->icon('heroicon-o-plus'),
+                    ->icon('heroicon-o-plus')
+                    ->modalWidth('sm')
+                    ->modalHeading('Adicionar Cliente'),
             ])
             ->columns([
                 Tables\Columns\TextColumn::make('created_at')
@@ -66,7 +71,7 @@ class ClientResource extends Resource
                 //
             ])
             ->actions([
-                
+
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
@@ -74,12 +79,10 @@ class ClientResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
-            
-            
     }
-  
 
-  /*  public static function getRelations(): array
+
+    /*  public static function getRelations(): array
     {
         return [
             RelationManagers\OrderRelationManager::class
@@ -90,8 +93,8 @@ class ClientResource extends Resource
     {
         return [
             'index' => Pages\ListClients::route('/'),
-            'create' => Pages\CreateClient::route('/create'),
-            'edit' => Pages\EditClient::route('/{record}/edit'),
+           // 'create' => Pages\CreateClient::route('/create'),
+           // 'edit' => Pages\EditClient::route('/{record}/edit'),
         ];
     }
 }

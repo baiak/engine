@@ -198,8 +198,8 @@ class OrderResource extends Resource
 
                 Tables\Columns\TextColumn::make('deadline')
                     ->label('Prazo')
-                    ->since()
-                    ->dateTime()
+                    ->date('d/m/Y')
+                    //  ->since()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('status'),

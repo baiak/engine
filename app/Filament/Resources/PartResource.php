@@ -28,7 +28,7 @@ class PartResource extends Resource
     protected static ?string $navigationGroup = 'Administração';
 
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
-    public static function getCleanOptionString(Model $model): string
+    /*public static function getCleanOptionString(Model $model): string
     {
         return (
             view('Components.select-user-result')
@@ -37,7 +37,7 @@ class PartResource extends Resource
             ->with('image', $model?->profileImg)
             ->render()
         );
-    }
+    }*/
     public static function form(Form $form): Form
     {
         return $form
@@ -69,7 +69,11 @@ class PartResource extends Resource
                     ->searchable()
                     ->preload()
                     ->placeholder('Selecione um veículo')
-                    ->options(Vehicle::all()->pluck('title', 'id'))
+                    ->options(
+                        Vehicle::all()->mapWithKeys(function ($vehicle) {
+                            return [$vehicle->id => $vehicle->formatted_vehicle];
+                        })->toArray()
+                    ) 
                     ->createOptionForm([
                         Forms\Components\TextInput::make('factory')
                             ->label('Fabricante')
@@ -111,15 +115,18 @@ class PartResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('title')
+                    ->sortable()
                     ->label('Peça')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('vehicle.model')
                     ->label('Veículo')
+                    ->sortable()
                     ->getStateUsing(fn($record) => $record->vehicle->factory . ' / ' .
                         $record->vehicle->model . ' / ' .
                         $record->vehicle->motor)
                     ->searchable(),
                 Tables\Columns\TextColumn::make('vehicle.motor')
+                    ->sortable()
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
