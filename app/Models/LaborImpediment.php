@@ -22,6 +22,7 @@ class LaborImpediment extends Model
         'observations',
         'created_at',
         'updated_at',
+        'logs',
     ];
 
     protected $casts = [

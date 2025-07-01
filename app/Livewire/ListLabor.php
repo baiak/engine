@@ -110,34 +110,35 @@ class ListLabor extends Component implements HasForms, HasTable
                         TextColumn::make('status')
                             ->badge()
 
-                           /* ->formatStateUsing(fn ($state) => $state instanceof TypeOfLaborStatus ? $state->getIcon() : TypeOfLaborStatus::tryFrom($state)?->getIcon() ?? 'heroicon-o-question-mark-circle')
+                            /* ->formatStateUsing(fn ($state) => $state instanceof TypeOfLaborStatus ? $state->getIcon() : TypeOfLaborStatus::tryFrom($state)?->getIcon() ?? 'heroicon-o-question-mark-circle')
                             ->icon(fn ($state) => $state instanceof TypeOfLaborStatus ? $state->getIcon() : TypeOfLaborStatus::tryFrom($state)?->getIcon() ?? 'heroicon-o-question-mark-circle'),*/
 
-                          ->formatStateUsing(fn ($state) =>
-                           $state instanceof TypeOfLaborStatus
-                               ? "<span class='inline-flex items-center whitespace-nowrap' {$state->getStyle()}>
+                            ->formatStateUsing(
+                                fn($state) =>
+                                $state instanceof TypeOfLaborStatus
+                                    ? "<span class='inline-flex items-center whitespace-nowrap' {$state->getStyle()}>
                                  <i class='{$state->getIcon()}'</i>{$state->getLabel()}</span>"
-                               : (TypeOfLaborStatus::tryFrom($state)?->getLabel() ?? 'Desconhecido')
-                           )
+                                    : (TypeOfLaborStatus::tryFrom($state)?->getLabel() ?? 'Desconhecido')
+                            )
 
                             ->html() // Habilita HTML para permitir ícones inline*/
 
                     ])->alignment(Alignment::End)
                 ]),
                 Panel::make([
-                        Stack::make([
-                            TextColumn::make('created_at')
-                                ->formatStateUsing(function($record) {
-                                    return '<small>Adicionado em: ' . $record->pivot->created_at->format('d/m/Y - H:i') . '</small>';
-                                })->html(),
-                            TextColumn::make('description')
-                                ->default(
-                                    //fn ($record) => $record->pivot->description
-                                    function($record){
-                                        return($record->pivot->description);
-                                    }
-                                )->html(),
-                        ]),
+                    Stack::make([
+                        TextColumn::make('created_at')
+                            ->formatStateUsing(function ($record) {
+                                return '<small>Adicionado em: ' . $record->pivot->created_at->format('d/m/Y - H:i') . '</small>';
+                            })->html(),
+                        TextColumn::make('description')
+                            ->default(
+                                //fn ($record) => $record->pivot->description
+                                function ($record) {
+                                    return ($record->pivot->description);
+                                }
+                            )->html(),
+                    ]),
                 ])->collapsed(true)
             ])->contentGrid([
                 'sm' => 1,
@@ -149,16 +150,22 @@ class ListLabor extends Component implements HasForms, HasTable
             ])->paginated(false)
             ->headerActions([
                 Tables\Actions\CreateAction::make()
+                    ->modalHeading('Adicionar mão de obra')
+                    ->icon('heroicon-o-wrench-screwdriver')
                     ->label('Adicionar mão de obra')
                     //->model(ServiceLabor::class)
                     ->form([
-                        Forms\Components\TextInput::make('user_id')
+                        Forms\Components\Hidden::make('user_id')
                             ->default(Auth::User()->id),
                         Forms\Components\Hidden::make('order_id')
                             ->default($this->ServiceLabor->order->id),
                         Forms\Components\Hidden::make('service_id')
                             ->default($this->ServiceLabor->id),
                         Forms\Components\Select::make('labor_id')
+                            ->label('Mão de obra')
+                            ->searchable()
+                            ->placeholder('Selecione a mão de obra')
+                            ->createOptionModalHeading('Novo Item de Mão de Obra')
                             ->required()
                             ->relationship('labor', 'title')
                             ->options(function (Get $get) {
@@ -169,7 +176,7 @@ class ListLabor extends Component implements HasForms, HasTable
                                 return [];
                             })
                             ->createOptionForm([
-                                Forms\Components\TextInput::make('part_id')
+                                Forms\Components\Hidden::make('part_id')
                                     ->default($this->ServiceLabor->part_id),
                                 Forms\Components\TextInput::make('title')
                                     ->label('Titulo da mão de obra')
@@ -178,7 +185,8 @@ class ListLabor extends Component implements HasForms, HasTable
                                     ->label('Descrições/Parametros e/ou observaçoes diversas')
                                     ->required(),*/
                             ]),
-                        Forms\Components\DatePicker::make('includedAt')
+                        Forms\Components\Hidden::make('includedAt')
+                            ->label('Data de inclusão')
                             ->default(now())
                             ->required(),
                         Forms\Components\Hidden::make('part_id')
@@ -188,35 +196,40 @@ class ListLabor extends Component implements HasForms, HasTable
                                 return $service ? $service->part_id : null;
                             }),
                         Forms\Components\RichEditor::make('description')
+                            ->toolbarButtons([
+                                'bold',
+                                'italic',
+                                'underline',
+                                'attachFiles',
+                            ])
                             ->required()
-                            ->label('Descrição/observaçoes diversas sobre o serviço'),
+                            ->label('Descrição/observaçoes diversas sobre a mão de obra a ser executada'),
                         Forms\Components\Radio::make('status')
                             ->options(TypeOfLaborStatus::class)
                             ->required(),
                     ])
-                   ->action(function ($data) {
-                       $serviceLabor=ServiceLabor::create($data);
-                       //enviando a notificacao ->TODO: FAZER UM FOREACH PARA ENVIAR A NOTIFICACAO PARA TODOS OS ADMINS
-                       $user = User::findOrFail(Auth::id());
-                       //buscar dados da ordem
-                       $order= Order::findOrFail($data['order_id']);
-                       $orderNumber = $order->order_number;
-                       try {
-                           $user->notify(new ServiceLaborCreateNotification(
-                               $serviceLabor,
-                               $user->name,
-                               $data['order_id'],
-                               $order->order_number,
-                               $order->order_number,
-                           ));
-                       } catch (\Exception $e) {
-                           // Opcional: Faça o log da exceção para análise posterior
-                           Log::info('Erro ao enviar notificação de mão de obra');
+                    ->action(function ($data) {
+                        $serviceLabor = ServiceLabor::create($data);
+                        //enviando a notificacao ->TODO: FAZER UM FOREACH PARA ENVIAR A NOTIFICACAO PARA TODOS OS ADMINS
+                        $user = User::findOrFail(Auth::id());
+                        //buscar dados da ordem
+                        $order = Order::findOrFail($data['order_id']);
+                        $orderNumber = $order->order_number;
+                        try {
+                            $user->notify(new ServiceLaborCreateNotification(
+                                $serviceLabor,
+                                $user->name,
+                                $data['order_id'],
+                                $order->order_number,
+                                $order->order_number,
+                            ));
+                        } catch (\Exception $e) {
+                            // Opcional: Faça o log da exceção para análise posterior
+                            Log::info('Erro ao enviar notificação de mão de obra');
 
-                           // Opcional: Retorne uma resposta ou notifique o usuário
-                           throw new RuntimeException('OPA..Falha ao enviar notificação. Por favor, tente novamente mais tarde.');
-                       }
-
+                            // Opcional: Retorne uma resposta ou notifique o usuário
+                            throw new RuntimeException('OPA..Falha ao enviar notificação. Por favor, tente novamente mais tarde.');
+                        }
                     })
             ])
             ->actions([
@@ -227,7 +240,7 @@ class ListLabor extends Component implements HasForms, HasTable
                         Forms\Components\TextInput::make('title')
                             ->readOnly(),
                         Forms\Components\RichEditor::make('description')
-                            ->formatStateUsing(fn(Model $record)=>$record->pivot->description)
+                            ->formatStateUsing(fn(Model $record) => $record->pivot->description)
                             ->required(),
                         Radio::make('status')
                             ->options(TypeOfLaborStatus::class),
@@ -241,16 +254,16 @@ class ListLabor extends Component implements HasForms, HasTable
                     ->model(ServiceLabor::class)
                     ->form([
                         Forms\Components\TextInput::make('pivot_id')
-                            ->default(fn (Model $record)=>$record->pivot->id),
+                            ->default(fn(Model $record) => $record->pivot->id),
                         Forms\Components\TextInput::make('title')
                             ->readOnly(),
                         Forms\Components\RichEditor::make('description')
-                             ->formatStateUsing(fn(Model $record)=>$record->pivot->description)
-                             ->required(),
+                            ->formatStateUsing(fn(Model $record) => $record->pivot->description)
+                            ->required(),
                         Radio::make('status')
                             ->options(TypeOfLaborStatus::class),
                     ])
-                ->after((function ($record) {
+                    ->after((function ($record) {
                         // Inserir logs após a edição
                         DB::table('service_labor_logs')->insert([
                             'service_labor_id' => $record->pivot->id,
@@ -276,6 +289,4 @@ class ListLabor extends Component implements HasForms, HasTable
     {
         return view('livewire.list-labor');
     }
-
-
 }

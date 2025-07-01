@@ -70,7 +70,6 @@ class ViewLaborImpediment extends ViewRecord
                                 ViewEntry::make('impediments')
                                     ->view('components.impediments.header-wrapper')
                                     ->columnSpanFull(),
-
                             ])
                             ->columnStart(2)
                             ->columnSpan(2)

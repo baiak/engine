@@ -19,6 +19,7 @@ class CreateLaborImpediment extends CreateRecord
 
     protected function handleRecordCreation(array $data): Model
     {
+        //dd($impedimentData);
         $createdImpediments = [];
         $complainantId = Auth::id();
 
@@ -84,7 +85,7 @@ class CreateLaborImpediment extends CreateRecord
             }
             $createdImpediments[] = $newImpediment;
         }
-        
+        var_dump($impedimentData);
         if (empty($createdImpediments) && $firstCreatedImpediment === null) { // Should be caught by isEmpty check above
             Notification::make()
                 ->title('Nenhum impedimento foi criado.')

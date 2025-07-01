@@ -22,7 +22,7 @@ class ListLaborImpediments extends ListRecords
     protected function getTableQuery(): Builder
     {
         // Display impediments where the authenticated user is the 'complained_id' **
-        return parent::getTableQuery()->where('complained_id', Auth::id());
+        return parent::getTableQuery()->where('complained_id', Auth::id())->orWhere('complainant_id', Auth::id());;
     }
 
     // If you want a true card layout, you might need to override the view:

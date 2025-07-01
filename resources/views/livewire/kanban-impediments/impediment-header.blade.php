@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 <div>
+
     <!--header!-->
     <div>
         <div style="background-color:rgb(31, 31, 32); padding: 10px; border-radius: 8px; margin-bottom: 20px;">
@@ -27,6 +28,7 @@
 
                     <div class="text text-white p-2">
                         {{ $registro->reason }}
+                        <p style="font-size: small;">{{$registro->observation}}</p>
                     </div>
 
                 </div>
@@ -36,35 +38,46 @@
             </div>
 
             <!-- form para resposta!-->
-            <div x-data="{ openForm: false, isLoading:false, responseText: '', selectedStatus: @js($status) }" style=" padding: 10px; margin-left:20px; border-radius: 8px; font-size:10px; color:#2b2f32;">
+            <div x-data="{ 
+            openForm: false, 
+            isLoading:false, 
+            responseText: '', 
+            selectedStatus: @js($status),
+            async submitForm() {
+        this.isLoading = true; // Ativa o carregamento
+
+        try {
+            // Sincroniza os dados do Alpine para as propriedades do Livewire
+            await this.$wire.set('response', this.responseText);
+            await this.$wire.set('status', this.selectedStatus);
+
+            // Chama o método Livewire e aguarda sua conclusão
+            await this.$wire.submitResponse();
+
+            // Lógica de sucesso
+            this.responseText = ''; // Limpa o campo de resposta
+            // this.openForm = false; // Opcional: fechar o formulário
+        } catch (error) {
+            console.error('Erro ao submeter:', error);
+            // Você pode adicionar uma notificação de erro aqui, se não estiver usando a do Livewire
+            alert('Ocorreu um erro ao enviar a resposta. Verifique o console para detalhes.');
+        } finally {
+            this.isLoading = false; // Desativa o carregamento, independentemente do resultado
+        }
+    }
+             }" style=" padding: 10px; margin-left:20px; border-radius: 8px; font-size:10px; color:#2b2f32;">
                 <x-filament::button @click="openForm = !openForm" color="gray" icon="heroicon-o-chat-bubble-left-right" icon-position="before">
-                    <span class="flex items-center justify-between gap-2">Responder
+                    <span class="flex items-center justify-between gap-2">Adicionar mensagem
                         <svg :class="{ 'rotate-180': openForm }" class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                         </svg>
                     </span>
                 </x-filament::button>
                 <div x-show="openForm" class="mt-2">
-                    <form wire:submit.prevent="
-                    isLoading = true;
-                        // Atualiza as propriedades do Livewire com os valores do Alpine
-                        await $wire.set('response', responseText);
-                        await $wire.set('status', selectedStatus);
-                        // Chama a action do Livewire
-                        try {
-                            await $wire.submitResponse();
-                            responseText = ''; // Limpa o campo no frontend
-                            // selectedStatus já deve ser atualizado pelo binding do Livewire se $this->status mudar no PHP
-                            // openForm = false; // Opcional: fechar o formulário após o sucesso
-                        } catch (error) {
-                            console.error('Erro ao submeter:', error);
-                            alert('Ocorreu um erro ao enviar a resposta. Verifique o console para detalhes.');
-                        } finally {
-                            isLoading = false;
-                        }" class="space-y-4">
+                    <form @submit.prevent="submitForm()" wire:loading.attr="disabled" wire:target="submitResponse" class="space-y-4">
                         <div>
                             <label for="alpine-response" class="block text-sm font-medium text-white">Resposta</label>
-                            <textarea id="alpine-response" x-model="responseText" rows="3"
+                            <textarea id="alpine-response" x-model="responseText"  rows="3"
                                 class="mt-1 block w-[70%] rounded-lg border shadow-sm transition duration-75 text-sm leading-6 py-1.5 px-3 border-gray-600 bg-gray-700 text-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/50"
                                 :disabled="isLoading"></textarea>
                             @if($errors->has('response'))
@@ -86,7 +99,20 @@
                                 @endif
                             </x-filament::input.wrapper>
 
-                            <x-filament::button type="submit" class="btn btn-success">Enviar Resposta</x-filament::button>
+                            <x-filament::button type="submit" class="btn btn-success">
+                                <span x-show="!isLoading">Enviar Resposta</span>
+                                <span x-show="isLoading" class="flex items-center">
+                                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Enviando...
+                                </span>
+                            </x-filament::button>
+                             <x-filament::button @click="openForm = !openForm" color="gray" icon="heroicon-o-x-mark" icon-position="before">
+                                Cancelar
+                            </x-filament::button>
+
                         </div>
                     </form>
 
@@ -111,17 +137,17 @@
                             style="margin-top:4px; margin-right:8px; margin-left:7px" />
 
                         <span style="margin-right: 6px; padding-bottom: 5px; font-weight: bold">
-                            {!! app('userName')($registro->complained_id) !!}
+                            {!! app('userName')($logItem['user_id']) !!}
                         </span>
                     </div>
 
                     <div class="flex items-start p-4">
                         <div class="avatar mr-3">
-                            {!! app('userAvatar')($registro->complained_id) !!}
+                            {!! app('userAvatar')($logItem['user_id']) !!}
                         </div>
 
                         <div class="text text-white p-2">
-                            {{ $logItem['observation'] }}
+                            {!! $logItem['observation'] !!}
                         </div>
 
                     </div>
