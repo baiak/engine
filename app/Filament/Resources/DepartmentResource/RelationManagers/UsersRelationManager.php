@@ -12,6 +12,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Carbon\Carbon;
+use Illuminate\Support\HtmlString;
 
 class UsersRelationManager extends RelationManager
 {
@@ -26,7 +27,7 @@ class UsersRelationManager extends RelationManager
                 Toggle::make('is_responsible')
                     ->label('É responsável pelo departamento')
                     ->default(false)
-                    ->visible(fn (callable $get) => $get('is_active') ?? true)
+                    ->visible(fn(callable $get) => $get('is_active') ?? true)
                     ->afterStateUpdated(function ($state, $set, $record) {
                         if ($state && $record) {
                             // Get all user IDs explicitly from the relationship
@@ -35,7 +36,7 @@ class UsersRelationManager extends RelationManager
                                 ->select('users.id')
                                 ->pluck('users.id')
                                 ->toArray();
-                                
+
                             // Update all existing users to not be responsible
                             foreach ($userIds as $userId) {
                                 $this->getOwnerRecord()->users()->updateExistingPivot(
@@ -43,7 +44,7 @@ class UsersRelationManager extends RelationManager
                                     ['is_responsible' => false]
                                 );
                             }
-                            
+
                             // Then update the current record
                             $this->getOwnerRecord()->users()->updateExistingPivot(
                                 $record->id,
@@ -51,7 +52,7 @@ class UsersRelationManager extends RelationManager
                             );
                         }
                     }),
-                    
+
                 Toggle::make('is_active')
                     ->label('Está ativo no departamento')
                     ->default(true)
@@ -64,22 +65,27 @@ class UsersRelationManager extends RelationManager
                             $set('dismissal_date', null);
                         }
                     }),
-                    
+
                 DateTimePicker::make('admission_date')
                     ->label('Data de admissão')
                     ->default(now())
                     ->required()
-                    ->maxDate(now()),
-                    
+                    ->maxDate(now())
+                    ->withoutTime()                    
+                    ->columnSpan(1),
+
                 DateTimePicker::make('dismissal_date')
                     ->label('Data de demissão')
-                    ->visible(fn (callable $get) => !$get('is_active'))
+                    ->visible(fn(callable $get) => !$get('is_active'))
                     ->default(null)
+                    ->withoutTime()
                     ->minDate(function (callable $get) {
                         $admissionDate = $get('admission_date');
                         return $admissionDate ? Carbon::parse($admissionDate) : null;
-                    }),
-            ]);
+                    })
+                    ->columnSpan(1),
+            ])
+            ->columns(1);
     }
 
     public function table(Table $table): Table
@@ -90,34 +96,34 @@ class UsersRelationManager extends RelationManager
                 Tables\Columns\ImageColumn::make('profileImg')
                     ->label('Avatar')
                     ->circular(),
-                    
+
                 Tables\Columns\TextColumn::make('name')
-                    ->description(fn ($record): string => $record->email)
+                    ->description(fn($record): string => $record->email)
                     ->searchable(),
-                    
+
                 Tables\Columns\IconColumn::make('pivot.is_responsible')
                     ->label('Responsável')
                     ->boolean()
                     ->trueIcon('heroicon-o-check-circle')
                     ->falseIcon('heroicon-o-x-circle'),
-                    
+
                 Tables\Columns\IconColumn::make('pivot.is_active')
                     ->label('Ativo')
                     ->boolean()
                     ->trueIcon('heroicon-o-check-circle')
                     ->falseIcon('heroicon-o-x-circle'),
-                    
+
                 Tables\Columns\TextColumn::make('pivot.admission_date')
                     ->label('Admissão')
                     ->date('d/m/Y')
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('pivot.dismissal_date')
                     ->label('Demissão')
                     ->date('d/m/Y')
                     ->placeholder('--')
                     ->sortable(),
-                
+
                 // Adicionar uma coluna de ações para gerenciar o status de responsável
                 Tables\Columns\TextColumn::make('actions')
                     ->label('Gerenciar')
@@ -126,7 +132,7 @@ class UsersRelationManager extends RelationManager
                         if (!isset($record->pivot) || !$record->pivot->is_active) {
                             return '';
                         }
-                        
+
                         return $record->pivot->is_responsible ? 'Remover responsabilidade' : 'Tornar responsável';
                     })
                     ->action(function ($record) {
@@ -134,10 +140,10 @@ class UsersRelationManager extends RelationManager
                         if (!isset($record->pivot) || !$record->pivot->is_active) {
                             return;
                         }
-                        
+
                         // Se for responsável, remove; se não for, torna responsável
                         $newState = !$record->pivot->is_responsible;
-                        
+
                         if ($newState) {
                             // Get all user IDs explicitly from the relationship
                             $userIds = $this->getOwnerRecord()
@@ -145,7 +151,7 @@ class UsersRelationManager extends RelationManager
                                 ->select('users.id')
                                 ->pluck('users.id')
                                 ->toArray();
-                                
+
                             // Update all existing users to not be responsible
                             foreach ($userIds as $userId) {
                                 $this->getOwnerRecord()->users()->updateExistingPivot(
@@ -154,14 +160,14 @@ class UsersRelationManager extends RelationManager
                                 );
                             }
                         }
-                        
+
                         // Update the current record
                         $this->getOwnerRecord()->users()->updateExistingPivot(
                             $record->id,
                             ['is_responsible' => $newState]
                         );
                     })
-                    ->hidden(fn ($record) => !isset($record->pivot) || !$record->pivot->is_active),
+                    ->hidden(fn($record) => !isset($record->pivot) || !$record->pivot->is_active),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('is_active')
@@ -180,24 +186,40 @@ class UsersRelationManager extends RelationManager
             ->headerActions([
                 Tables\Actions\AttachAction::make()
                     ->preloadRecordSelect()
-                    ->form(fn (Tables\Actions\AttachAction $action): array => [
+                    ->form(fn(Tables\Actions\AttachAction $action): array => [
                         $action->getRecordSelect(),
                         Toggle::make('is_responsible')
                             ->label('É responsável pelo departamento')
                             ->default(false)
-                            ->visible(fn (callable $get) => $get('is_active') ?? true),
+                            ->visible(fn(callable $get) => $get('is_active') ?? true),
                         Toggle::make('is_active')
                             ->label('Ativo no departamento')
                             ->default(true)
                             ->reactive(),
                         DateTimePicker::make('admission_date')
                             ->label('Data de admissão')
+                            ->date_format('d/m/Y')
                             ->default(now())
                             ->required(),
                     ]),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->modalWidth('md')
+                     ->modalHeading(function ($record) {
+                        $department = $this->getOwnerRecord();
+                        $userAvatar  = app('userAvatar');
+                        $userName =  app('userName');
+
+                        $html = '<h3>Editar usuário no departamento: <b>' . e($department->title) . 
+                        '</b></h3><fieldset style="margin:5px; padding:3px; border-color:#999999" class="border border-gray rounded-lg p-2 m-4">
+                        <div class="flex items-center gap-3">';
+                        $html .= $userAvatar($record->id);
+                        $html .= '<span>' . e($userName($record->id)) . '</span>';
+                        $html .= '</fieldset>';
+
+                        return new HtmlString($html);
+                    }),
                 Tables\Actions\DetachAction::make()
                     ->before(function ($record) {
                         if ($record && isset($record->pivot) && $record->pivot->is_responsible) {
@@ -207,7 +229,7 @@ class UsersRelationManager extends RelationManager
                                 ->select('users.id')
                                 ->pluck('users.id')
                                 ->toArray();
-                                
+
                             // Update each user individually
                             foreach ($userIds as $userId) {
                                 if ($userId != $record->id) { // Skip the current record as it will be detached
@@ -221,16 +243,16 @@ class UsersRelationManager extends RelationManager
                     }),
                 // Nova ação para alternar o status de responsável
                 Tables\Actions\Action::make('toggleResponsible')
-                    ->label(fn ($record) => $record && isset($record->pivot) && $record->pivot->is_responsible ? 
+                    ->label(fn($record) => $record && isset($record->pivot) && $record->pivot->is_responsible ?
                         'Remover responsabilidade' : 'Tornar responsável')
-                    ->icon(fn ($record) => $record && isset($record->pivot) && $record->pivot->is_responsible ? 
+                    ->icon(fn($record) => $record && isset($record->pivot) && $record->pivot->is_responsible ?
                         'heroicon-o-x-mark' : 'heroicon-o-check')
-                    ->color(fn ($record) => $record && isset($record->pivot) && $record->pivot->is_responsible ? 
+                    ->color(fn($record) => $record && isset($record->pivot) && $record->pivot->is_responsible ?
                         'danger' : 'success')
-                    ->hidden(fn ($record) => !($record && isset($record->pivot) && $record->pivot->is_active))
+                    ->hidden(fn($record) => !($record && isset($record->pivot) && $record->pivot->is_active))
                     ->action(function ($record) {
                         $newState = !$record->pivot->is_responsible;
-                        
+
                         if ($newState) {
                             // Get all user IDs explicitly from the relationship
                             $userIds = $this->getOwnerRecord()
@@ -238,7 +260,7 @@ class UsersRelationManager extends RelationManager
                                 ->select('users.id')
                                 ->pluck('users.id')
                                 ->toArray();
-                                
+
                             // Update all existing users to not be responsible
                             foreach ($userIds as $userId) {
                                 $this->getOwnerRecord()->users()->updateExistingPivot(
@@ -247,7 +269,7 @@ class UsersRelationManager extends RelationManager
                                 );
                             }
                         }
-                        
+
                         // Update the current record
                         $this->getOwnerRecord()->users()->updateExistingPivot(
                             $record->id,

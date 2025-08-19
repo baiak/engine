@@ -13,8 +13,17 @@ class Client extends Model
         'name',
         'city'
     ];
-    public function Order():HasMany
+    public function Order(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+    public function phones(): HasMany
+    {
+        return $this->hasMany(Phone::class);
+    }
+
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(Address::class);
     }
 }

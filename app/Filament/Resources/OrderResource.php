@@ -71,8 +71,12 @@ class OrderResource extends Resource
 
                         Forms\Components\Placeholder::make('deadline')
                             ->content(function ($record) {
-                                return $record->deadline;
-                            })
+                                if (! $record->deadline) {
+                                    return '-';
+                                }
+                                return $record->deadline->format('d/m/Y')
+                                    . ' (' . $record->deadline->diffForHumans() . ')';
+                            }),
                         //->hidden(fn(string $operation): bool => $operation === 'create'),
                     ]),
 
@@ -96,15 +100,71 @@ class OrderResource extends Resource
                                 Forms\Components\TextInput::make('name')
                                     ->label('Nome')
                                     ->required(),
-                                Forms\Components\TextInput::make('city')
-                                    ->label('Cidade')
-                                    ->required(),
+                                // Repeater para Endereços
+                                Forms\Components\Repeater::make('addresses') // 'addresses' será o nome da relação no modelo Client
+                                    ->label('Endereços')
+                                    ->relationship('addresses') // Relacionamento com o modelo Address
+                                    ->columns(1) // Dois campos por linha no repeater
+                                    ->collapsed() // Começa recolhido
+                                    ->cloneable(false) // Nao Permite duplicar entradas
+                                    ->schema([
+                                        Forms\Components\TextInput::make('cep')
+                                            ->label('CEP')
+                                            ->mask('99999-999')
+                                            ->required()
+                                            ->maxLength(255),
+                                        Forms\Components\TextInput::make('estado')
+                                            ->label('Estado')
+                                            ->required()
+                                            ->maxLength(255),
+                                        Forms\Components\TextInput::make('cidade')
+                                            ->label('Cidade')
+                                            ->required()
+                                            ->maxLength(255),
+                                        Forms\Components\TextInput::make('bairro')
+                                            ->label('Bairro')
+                                            ->required()
+                                            ->maxLength(255),
+                                        Forms\Components\TextInput::make('rua')
+                                            ->label('Rua')
+                                            ->required()
+                                            ->maxLength(255),
+                                        Forms\Components\TextInput::make('numero')
+                                            ->label('Número')
+                                            ->numeric()
+                                            ->maxLength(10),
+                                        Forms\Components\TextInput::make('complemento')
+                                            ->label('Complemento')
+                                            ->maxLength(255)
+                                            ->nullable(),
+                                    ]),
+
+                                Forms\Components\Repeater::make('phone')
+                                    ->label('Telefones')
+                                    ->relationship('phones') // Relacionamento com o modelo Phone
+                                    ->schema([
+                                        Forms\Components\TextInput::make('title')
+                                            ->label('Título (Ex: Residencial, Celular)')
+                                            ->required()
+                                            ->maxLength(255),
+                                        Forms\Components\TextInput::make('number')
+                                            ->label('Número de Telefone')
+                                            ->tel()
+                                            ->mask('(99)99999-9999')
+                                            ->required()
+                                            ->maxLength(20),
+                                    ])
+
                             ])
                             ->required()
-                            ->hidden(fn(string $operation): bool => $operation === 'edit'),
+                            ->hidden(fn(string $operation): bool => $operation === 'edit')
+                            ->createOptionAction(function ($action) {
+                                return $action->modalWidth('md'); // aqui você define a largura
+                            }),
 
                         Forms\Components\Select::make('vehicle_id')
                             ->columnSpan(['sm' => 2])
+                            ->native(false)
 
                             ->label('Veículo')
                             ->live()

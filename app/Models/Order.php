@@ -94,6 +94,7 @@ class Order extends Model implements Sortable
     }
 
     protected $casts = [
-        'status' => TypeOforderStatus::class
+        'status' => TypeOforderStatus::class,
+        'deadline' => 'datetime',
     ];
 }

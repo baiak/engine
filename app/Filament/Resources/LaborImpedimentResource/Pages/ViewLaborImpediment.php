@@ -35,10 +35,22 @@ class ViewLaborImpediment extends ViewRecord
                         Fieldset::make('')
                             ->label(fn($record) => 'OS nº ' . $record->serviceLabor->service->order->order_number)
                             ->schema([
-                                TextEntry::make('serviceLabor.service.order.client.name')->label('Cliente'),
-                                TextEntry::make('serviceLabor.service.order.vehicle.formatted_vehicle')->label('Veículo'),
-                         
-                                TextEntry::make('serviceLabor.service.part.title')->label('Peça'),
+                                
+                                TextEntry::make('serviceLabor.service.order.client.name')
+                                    ->extraAttributes(['class' => 'font-bold'])
+                                    ->label('Cliente'),
+                                TextEntry::make('serviceLabor.service.order.vehicle.formatted_vehicle')
+                                    ->extraAttributes(['class' => 'font-bold'])
+                                    ->label('Veículo'),
+
+                                TextEntry::make('serviceLabor.service.part.title')
+                                    ->extraAttributes(['class' => 'font-bold'])
+                                    ->label('Peça'),                                
+                                
+                                    TextEntry::make('serviceLabor.labor.title')->label('Mão de Obra')
+                                    ->extraAttributes(['class' => 'font-bold'])
+                                    ->columnSpanFull(),
+
                                 TextEntry::make('createdAtt')->label('Impedimento adicionado em:')
                                     ->state(
                                         function ($record) {
@@ -53,10 +65,10 @@ class ViewLaborImpediment extends ViewRecord
                                         }
                                     )
                                     ->columnSpanFull(),
-                                TextEntry::make('serviceLabor.labor.title')->label('Mão de Obra')
-                                    ->columnSpanFull(),
+
                                 TextEntry::make('status')
                                     ->label('Status do impedimento:')
+                                    ->extraAttributes(['class' => 'font-bold'])
                                     ->columnSpanFull(),
 
                             ])

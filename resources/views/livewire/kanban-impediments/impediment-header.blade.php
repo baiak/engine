@@ -34,7 +34,7 @@
                 </div>
                 <div class="date p-2 rounded-b-xl"
                     style="font-size: x-small; background-color: #2b2f32; color: #9ca3af; width: 100%;">
-                    em: {{ $registro->created_at }}</div>
+                    em: {{ \Carbon\Carbon::parse($registro->created_at)->translatedFormat('j \d\e F \d\e Y \à\s H:i') }}</div>
             </div>
 
             <!-- form para resposta!-->
@@ -66,6 +66,9 @@
         }
     }
              }" style=" padding: 10px; margin-left:20px; border-radius: 8px; font-size:10px; color:#2b2f32;">
+
+                @unless($registro->status->value === 'resolvido')
+
                 <x-filament::button @click="openForm = !openForm" color="gray" icon="heroicon-o-chat-bubble-left-right" icon-position="before">
                     <span class="flex items-center justify-between gap-2">Adicionar mensagem
                         <svg :class="{ 'rotate-180': openForm }" class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -73,11 +76,14 @@
                         </svg>
                     </span>
                 </x-filament::button>
+
+                @endunless
+
                 <div x-show="openForm" class="mt-2">
                     <form @submit.prevent="submitForm()" wire:loading.attr="disabled" wire:target="submitResponse" class="space-y-4">
                         <div>
                             <label for="alpine-response" class="block text-sm font-medium text-white">Resposta</label>
-                            <textarea id="alpine-response" x-model="responseText"  rows="3"
+                            <textarea id="alpine-response" x-model="responseText" rows="3"
                                 class="mt-1 block w-[70%] rounded-lg border shadow-sm transition duration-75 text-sm leading-6 py-1.5 px-3 border-gray-600 bg-gray-700 text-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/50"
                                 :disabled="isLoading"></textarea>
                             @if($errors->has('response'))
@@ -109,7 +115,7 @@
                                     Enviando...
                                 </span>
                             </x-filament::button>
-                             <x-filament::button @click="openForm = !openForm" color="gray" icon="heroicon-o-x-mark" icon-position="before">
+                            <x-filament::button @click="openForm = !openForm" color="gray" icon="heroicon-o-x-mark" icon-position="before">
                                 Cancelar
                             </x-filament::button>
 
@@ -124,8 +130,13 @@
 
         <!-- interacoes !-->
         <ul>
-            @foreach($registro->logs as $logItem)
-            <li class="mt-4 mb-4">
+            @php
+            $logsOrdenados = collect($registro->logs)->sortBy('date');
+            @endphp
+
+            @foreach($logsOrdenados as $logItem)
+
+            <li class="ml-4 mt-4 mb-4">
                 <div class="bg-black border-gray-600 shadow-md rounded-xl pt-0 mb-4"
                     style="border: 1px #4b5563; background-color: #4b5563">
                     <div
@@ -153,7 +164,11 @@
                     </div>
                     <div class="date p-2 rounded-b-xl"
                         style="font-size: x-small; background-color: #2b2f32; color: #9ca3af; width: 100%;">
-                        em: {{ $logItem['date'] }}</div>
+                        {{ \Carbon\Carbon::parse($logItem['date'])->translatedFormat('j \d\e F \d\e Y \à\s H:i') }}
+                        @if(isset($logItem['new_status']))
+                        <span style="margin-left: 5px;">Marcado como: {{ $logItem['new_status'] }}</span>
+                        @endif
+                    </div>
                 </div>
 
             </li>

@@ -536,14 +536,15 @@ use App\livewire\LaborImpedimentForm;
                     }),
 
                 Forms\Components\DatePicker::make('deadline')
+                    ->label('Prazo')
                     ->required()
                     ->minDate(now())// Data mínima = dia atual
                     ->maxDate(function (Forms\Get $get) {
                         return $get('deadlineHidden'); // Usa o valor do campo hidden como data máxima
                     }),
 
-
                 Forms\Components\RichEditor::make('description')
+                    ->label('Descrição do Serviço')
                     ->required()
                     ->maxLength(255),
             ]) 
