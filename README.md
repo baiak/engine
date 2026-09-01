@@ -1,4 +1,4 @@
- <p>Meu primeiro projeto com Laravel com  Filament 3. Trata-se de um protótipo funcional desenvolvido para meu TCC, por isso,  devido as circunstancias de prazo apertado para entregar a parte teórica, o desenvolvimento do codigo ainda precisa de refinamento</p>
+ <p>Meu primeiro projeto com Laravel utilizando Filament 3. Trata-se de um protótipo funcional desenvolvido para meu TCC</p>
 
 ![Screenshot 2025-06-11 at 01-10-00 Painel de Controle - Engine app](https://github.com/user-attachments/assets/3414a868-39d0-4350-9abc-1eb76b813835) <br>
 ![Screenshot 2025-06-11 at 01-23-12 Painel de Controle - Engine app](https://github.com/user-attachments/assets/5667a722-89e9-49a5-bf68-c10b5dcc9ba9) <br>
